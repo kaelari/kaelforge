@@ -1,0 +1,208 @@
+Simple
++ Aegis Conscript 
+- Aerial Surge 
+- Aquatic Embrace
++ Bonescythe Reaver 
++ Bramblewood Guardian 
+- Contagion Surge 	
++ Corpse Crawler 
+- Cull the Weak
+- Cultivate 
+- Cypien Augmentation 
++ Darkheart Wanderer 
+- Death Seeker 
+- Dr. Frankenbaum
+- Dreadbolt
+- Druid's Chant
+- Echowisp
+- Electro Net
+- Energy Prison
+- Energy Surge 
+- Enrage
+- Epidemic 	
++ Fangwood Ravager
+- Feral Instinct 
+- Ferocious Roar 	
+- Firestorm 
+- Flame Speaker 
+Flamestoke Shaman 	
+- Fleshfiend 
++ Forge Guardian Alpha 
++ Forge Guardian Beta 
++ Forgeplate Sentry 
+- Frostwild Tracker 
+- Ghastly Touch
+- Ghox, Metamind Paragon 
++ Glacial Colossus 	
+- Gloomreaper Witch 	
+- Glowstride Stag 
+- Grave Ghast
+- Grave Pact 
+- Graveborn Glutton 
+- Grimgaunt Devourer 
+- Grimgaunt Predator 
+- Grimgaunt Spectre 
+- Grove Huntress
+- Heavy Artillery
+- Hungering Strike
+- Ether Hounds
+- Iceborn Fortitude 
++ Ionic Warcharger 	
+- Jet Pack
+- Lifeshaper Savant 
+- Lightbringer Cleric 
+- Lightning Brand
+- Magma Hound 
++ Marrow Fiend
+- Master of Elements 
+- Matrix Warden
+- Metamind Adept 	
+- Metasculpt 
+- Mossbeard Patriarch 
+- Munitions Drone
+- Nargath Bruiser
++ Necrotic Wurm 
+- Necrovive 
+- Nether Embrace
++ Nexus Core 
+- Oreian Battledroid 
+- Oreian Warwalker
+- Oxidon Spitter 
+- Primal Surge
+- Primordial Slam 
+- Restless Wanderers 
++ Rimehorn Charger 
++ Scavenger Scorpion
++ Scout Drone
+- Scrapforge Titan
+- Shardplate Delver 
+- Soothing Radiance
++ Spark Bot 
++ Sparkblade Assassin 
+- Spring Dryad
+- Stasis Warden
+- Static Shock 	
++ Stonefist Giant
+- Storm Caller
++ Swampmoss Lurker 
+- Synapsis Oracle 
+- Tech Upgrade 
+- Technosmith 
+- Toxic Spores
+- Unrelenting Dead 
+- Uranti Cryomancer 
+- Uterra Packmaster 
+- Vault Technician 	
+Vengeful Spirit
+- Volcanic Giant 	
+- Warmonger Mod
++ Water Walker
+- Wildwood Sower 
++ Wind Primordial 
++ Xithian Hulk 	
++ Zombie Infantry 
+
+
+Easy
+- Arboris, Grove Dragon 
+- Arcflight Squadron 
+- Avalanche Invoker
+Blight Walker 	
+- Botanimate
++ Cavern Hydra
+- Darkshaper Savant 
++ Deepbranch Prowler
++ Deepwood Bear Rider
+- Disintegrate
+- Everflame Phoenix 
+- Explosive Demise 
+- Fell Walker 
+- Gemhide Basher
+- Grove Matriarch
+- Hellforged Avatar
+Hinterland Watchman
+Leafkin Progenitor
++ Lightning Wyrm
+- Lightshield Patrol 
+Necroslime 
+- Nexus Pilot 
+- Phytobomb
+- Pyre Giant
+Riftlasher 
+- Rootforged Avatar
+- Runegrove Guardian 
+- Scorchmane Dragon 
+- Scourgeflame Sorcerer 
+Seismic Adept
+- Soul Harvest 
+Spiritflame Mystic 
+- Steelforged Avatar
+- Steelshaper Savant 
+- Stormforged Avatar 
+- Talisin, Bard of Abundance 
+Touch of Blight 
+- Witherfrost Succubus
+
+
+Hard
+Alloyin Highlander
+Ashurian Mystic 
+Asir's Blessing 
+- Brightsteel Gargoyle 
+- Bulwark Bash 
+Cadaverous Thicket 
+Cinderfist Brawler 
+Deepbranch Ancient 
+Doomwing, Dire Drake 
+Fervent Assault 
+Firefist Uranti 	
+Flameblade Champion
+Flowsteel Prototype 
+Frozen Solid 
+Ghostscale Cobra 
+Hunting Pack
+Lifeblood Dryad
+Lyria, Muse of Varna 
+Natural Selection 
+Rageborn Hellion 
+Rite of the Grimgaunt
+Shardplate Mutant 
+Soul Drinker 
+Storm Bringer
+Windcaller Shaman 
+Zyx, Storm Herald   extra battles
+- Zimus, the Undying 
+- Uranti Bolt 
+- Brightsteel Sentinel 
+- Forcefield 
+- Palladium Pulsemage
+- Flameshaper Savant
+
+
+very hard
+Abraxas, Avatar of Kadras
++ Alloyin General 
+- Battle Techtician
+- Xrath, Dreadknight of Varna
+- Heart Tree
+Call the Lightning 
+Forge Guardian Gamma
+- Lightning Spark 
+Xithian Shambler
+Chrogias 
+Keeper of the Damned 
+
+
+major mechanics needed: (in hard to easy order)
+- conditional continuous abilities that can target
+- creature or player targets
+battle extra time
+random target
+damage trigger from combat to creature
+damage trigger from combat to player
+flank
+- until end of turn effects
+
+
+
+

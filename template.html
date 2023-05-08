@@ -1,0 +1,24 @@
+<body>
+<form method=post>
+<div>Cardname: <input type=text name=cardname></div>
+<div>Type: <select name=type><option value="Ship">Ship</option><option value="Effect">Effect</option></div>
+<div>Subtype: <input type=text name=subtype></div>
+<div>Rarity: <select name=rarity><option value="Common">Common</option><option value="Rare">Rare</option><option value="Hero">Hero</option><option value="Mythical">Mythical</option><option value="Token">Token</option></div>
+
+<div>Faction: <select name=faction><option value="Earth">Earth</option><option value="Helkinite">Helkinite</option><option value="Mars">Mars</option><option value="Dralk">Dralk</option></select></div>
+<div>Levels: <select name="levels"><option selected value=3>3</option><option value=2>2</option><option value=1>1</option><option value=0>0 (remove on play)</option></div>
+<div>Level 1 stats: <input type=text name=attack1> / <input type=text name=health1></div>
+<div>Level 2 stats: <input type=text name=attack2> / <input type=text name=health2></div>
+<div>Level 3 stats: <input type=text name=attack3> / <input type=text name=health3></div>
+<div>Level 1 Keywords: <input type=text name=keywords1></div>
+<div>Level 2 Keywords: <input type=text name=keywords2></div>
+<div>Level 3 Keywords: <input type=text name=keywords3></div>
+<div>Level 1 Triggers: <input type=text name=triggers1></div>
+<div>Level 2 Triggers: <input type=text name=triggers2></div>
+<div>Level 3 Triggers: <input type=text name=triggers3></div>
+<div>level 1 targets / effects (spell only)<TMPL_VAR targets> / <TMPL_VAR effects></div>
+<div>level 2 targets / effects (spell only)<TMPL_VAR targets> / <TMPL_VAR effects></div>
+<div>level 3 targets / effects (spell only)<TMPL_VAR targets> / <TMPL_VAR effects></div>
+
+</form>
+</body>
