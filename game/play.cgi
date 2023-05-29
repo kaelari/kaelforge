@@ -113,8 +113,11 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
         kfgameshared::debuglog("weare: ".Data::Dumper::Dumper($weare));
         my @a =split(/,/, $kfgameshared::gamedata->{objects}{$card}{targets});
         kfgameshared::debuglog("a is ".Data::Dumper::Dumper(\@a));
-       	($targets2, $alltargets, $variables )= kfgameshared::verifytargets(\@a, $targets, $card, $weare);
-			if (!$targets2){
+        my $failed=0;
+       	($targets2, $alltargets, $variables, $failed )= kfgameshared::verifytargets(\@a, $targets, $card, $weare);
+		kfgameshared::debuglog(Data::Dumper::Dumper($variables));
+		
+		if ($failed ){
 				$response->{status} = "Failed";
 				$response->{message} = "invalid target";
 				kfgameshared::end($response);
@@ -216,14 +219,16 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
     my $variables={};
     my @a =split(/,/, $activated);
     my $targets2;
-    ($targets2, $alltargets, $variables) = kfgameshared::verifytargets(\@a, $targets, $card, $weare);
-			if (!$targets2){
+    my $failed=0;
+    ($targets2, $alltargets, $variables, $failed) = kfgameshared::verifytargets(\@a, $targets, $card, $weare);
+			if ($failed){
 				$response->{status} = "Failed";
 				$response->{message} = "invalid target";
 				kfgameshared::end($response);
 				exit;
 			}
 			@targets2= @{$targets2};
+			push (@targets2, $card);
 			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(@targets2));
 			kfgameshared::debuglog("alltargets is:" . Data::Dumper::Dumper($alltargets));
 	
@@ -241,7 +246,7 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 						effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
 						effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1}, 
 						expires => $kfgameshared::alleffects->{$effect}{expires},
-						target => [$target], 
+						target => [$target, $card], 
 						effectcontroller => $weare,
 						variables => $variables
 						} );
@@ -319,9 +324,9 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$weare:$lane:$card", $objectstring ));
     
     kfgameshared::logmessage("$kfgameshared::player->{username} plays <link=$kfgameshared::gamedata->{objects}{$card}{CardId}><color=#000000>$kfgameshared::gamedata->{objects}{$card}{Name}(lvl $kfgameshared::gamedata->{objects}{$card}{level})</color></link>");
-    kfgameshared::debuglog("start checking triggers for creaturetrained+ $card");
+    kfgameshared::debuglog("start checking triggers for Creaturetrained+ $card");
     kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$card}, {Forged => 1} );
-    kfgameshared::debuglog("done checking triggers for creaturetrained");
+    kfgameshared::debuglog("done checking triggers for Creaturetrained");
 
     
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `draws`) VALUES(?, ?)", undef, ($kfgameshared::player->{userId}, -$card));

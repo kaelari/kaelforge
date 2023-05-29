@@ -1,15 +1,15 @@
 Simple
-+ Aegis Conscript 
+K  Aegis Conscript 
 - Aerial Surge 
 - Aquatic Embrace
-+ Bonescythe Reaver 
-+ Bramblewood Guardian 
+K  Bonescythe Reaver 
+K  Bramblewood Guardian 
 - Contagion Surge 	
-+ Corpse Crawler 
+K  Corpse Crawler 
 - Cull the Weak
 - Cultivate 
 - Cypien Augmentation 
-+ Darkheart Wanderer 
+K  Darkheart Wanderer 
 - Death Seeker 
 - Dr. Frankenbaum
 - Dreadbolt
@@ -20,20 +20,20 @@ Simple
 - Energy Surge 
 - Enrage
 - Epidemic 	
-+ Fangwood Ravager
+K  Fangwood Ravager
 - Feral Instinct 
 - Ferocious Roar 	
 - Firestorm 
 - Flame Speaker 
 Flamestoke Shaman 	
 - Fleshfiend 
-+ Forge Guardian Alpha 
-+ Forge Guardian Beta 
-+ Forgeplate Sentry 
+K  Forge Guardian Alpha 
+K  Forge Guardian Beta 
+K  Forgeplate Sentry 
 - Frostwild Tracker 
 - Ghastly Touch
 - Ghox, Metamind Paragon 
-+ Glacial Colossus 	
+K  Glacial Colossus 	
 - Gloomreaper Witch 	
 - Glowstride Stag 
 - Grave Ghast
@@ -42,49 +42,49 @@ Flamestoke Shaman
 - Grimgaunt Devourer 
 - Grimgaunt Predator 
 - Grimgaunt Spectre 
-- Grove Huntress
+D Grove Huntress
 - Heavy Artillery
 - Hungering Strike
-- Ether Hounds
+D Ether Hounds
 - Iceborn Fortitude 
-+ Ionic Warcharger 	
+K  Ionic Warcharger 	
 - Jet Pack
 - Lifeshaper Savant 
 - Lightbringer Cleric 
 - Lightning Brand
-- Magma Hound 
-+ Marrow Fiend
+D Magma Hound 
+K  Marrow Fiend
 - Master of Elements 
-- Matrix Warden
+D Matrix Warden
 - Metamind Adept 	
 - Metasculpt 
 - Mossbeard Patriarch 
 - Munitions Drone
-- Nargath Bruiser
-+ Necrotic Wurm 
+D Nargath Bruiser
+K  Necrotic Wurm 
 - Necrovive 
 - Nether Embrace
-+ Nexus Core 
+K  Nexus Core 
 - Oreian Battledroid 
 - Oreian Warwalker
 - Oxidon Spitter 
 - Primal Surge
 - Primordial Slam 
 - Restless Wanderers 
-+ Rimehorn Charger 
-+ Scavenger Scorpion
-+ Scout Drone
-- Scrapforge Titan
+K  Rimehorn Charger 
+K  Scavenger Scorpion
+K  Scout Drone
+K  Scrapforge Titan
 - Shardplate Delver 
 - Soothing Radiance
-+ Spark Bot 
-+ Sparkblade Assassin 
+K  Spark Bot 
+K  Sparkblade Assassin 
 - Spring Dryad
 - Stasis Warden
 - Static Shock 	
-+ Stonefist Giant
-- Storm Caller
-+ Swampmoss Lurker 
+K  Stonefist Giant
+K  Storm Caller
+K  Swampmoss Lurker 
 - Synapsis Oracle 
 - Tech Upgrade 
 - Technosmith 
@@ -92,15 +92,15 @@ Flamestoke Shaman
 - Unrelenting Dead 
 - Uranti Cryomancer 
 - Uterra Packmaster 
-- Vault Technician 	
+K  Vault Technician 	
 Vengeful Spirit
 - Volcanic Giant 	
 - Warmonger Mod
-+ Water Walker
+K  Water Walker
 - Wildwood Sower 
-+ Wind Primordial 
-+ Xithian Hulk 	
-+ Zombie Infantry 
+K  Wind Primordial 
+K  Xithian Hulk 	
+K  Zombie Infantry 
 
 
 Easy
@@ -109,10 +109,10 @@ Easy
 - Avalanche Invoker
 Blight Walker 	
 - Botanimate
-+ Cavern Hydra
+K  Cavern Hydra
 - Darkshaper Savant 
-+ Deepbranch Prowler
-+ Deepwood Bear Rider
+K  Deepbranch Prowler
+K  Deepwood Bear Rider
 - Disintegrate
 - Everflame Phoenix 
 - Explosive Demise 
@@ -122,7 +122,7 @@ Blight Walker
 - Hellforged Avatar
 Hinterland Watchman
 Leafkin Progenitor
-+ Lightning Wyrm
+K  Lightning Wyrm
 - Lightshield Patrol 
 Necroslime 
 - Nexus Pilot 
@@ -142,7 +142,7 @@ Spiritflame Mystic
 - Talisin, Bard of Abundance 
 Touch of Blight 
 - Witherfrost Succubus
-
+D Weirwood Patriarch
 
 Hard
 Alloyin Highlander
@@ -181,10 +181,10 @@ Zyx, Storm Herald   extra battles
 
 very hard
 Abraxas, Avatar of Kadras
-+ Alloyin General 
-- Battle Techtician
-- Xrath, Dreadknight of Varna
-- Heart Tree
+K  Alloyin General 
+K  Battle Techtician
+K  Xrath, Dreadknight of Varna
+K  Heart Tree
 Call the Lightning 
 Forge Guardian Gamma
 - Lightning Spark 

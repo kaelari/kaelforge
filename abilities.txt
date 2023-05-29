@@ -1,0 +1,34 @@
+Abilities by Faction:
+
+	Life: (tags, ability)
+		(Buff, Enters, Plus) when this ETB Give a creature +3/+3 * level
+		(Spawn, Enters, Plus) when this ETB spawn a 1/1, 3/3, 5/5 treefolk
+		(Buff, Turn, Plus) At the start of your turn all creatures you control get +1/+1 * level
+		(keyword) This has breakthrough
+		
+	Death:
+		(debuff, enters, minus) When this ETB give a creature -3/-3 * level
+		(Spawn, enters, plus) When this ETB Spawn a 5/5 zombie
+		(Buff, Enters, zombietribe, plus) When this ETB give all zombies Regen 2 * level
+		(keyword) This has regen 2/4/6
+		
+	Elemental:
+		(Buff, Enters, Plus) When this ETB give a creature mobility 1
+		(Damage, Burn, Activate, Minus) Activate: Deal damage equal to this creature's power to a creature
+		(Burn, Enters, Minus) When this ETB Deal 2*level damage to target creature
+		(keyword) This has mobility
+	
+	Tech:
+		(Buff, enters, Plus) All robots you control get armor 5/6/7 this turn
+		(Draw, Enters, Plus) When this ETB draw a card * level
+		(Draw, Turn, Plus) At the start of your turn draw a card
+		(keyword) This has Armor 3/4/5
+	
+	
+	Neutral:
+		(Debuff, enters, plus) When this ETB Give a creature a random battle skill
+		(stats) This has +3/+3 at all levels
+		
+	
+	
+	

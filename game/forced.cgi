@@ -50,10 +50,15 @@ my $target = param("target");
 my @targets;
 
 my $lane=param("target");
+kfgameshared::debuglog("we recieved: $lane");
 my $targets = from_json($lane);
 my @targets2;
 my $alltargets;
 my @a=split(/,/,$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindex});
+if ($kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targettype} eq "multi"){
+    @a=split(/,/,$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindexes});
+}
+
 	my $targets2;
 	kfgameshared::debuglog("Checking for target: $target");
 	
@@ -65,7 +70,7 @@ my @a=split(/,/,$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay
 				exit;
 			}
 			@targets2= @{$targets2};
-			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(@targets2));
+			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(\@targets2));
 			kfgameshared::debuglog("alltargets is:" . Data::Dumper::Dumper($alltargets));
 	
 
@@ -87,20 +92,22 @@ foreach my $effect (@effects){
         		}
 	}else {
 
-    kfgameshared::applyeffects({
-    	effecttype => $kfgameshared::alleffects->{$effect}{effecttype}, 
-    	effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
-    	effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1},
-    	target =>  \@targets2, 
-    	effectcontroller => $weare,
-    	});
-}
+        kfgameshared::applyeffects({
+            effecttype => $kfgameshared::alleffects->{$effect}{effecttype}, 
+            effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
+            effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1},
+            expires => $kfgameshared::alleffects->{$effect}{expires},
+            target =>  \@targets2, 
+            effectcontroller => $weare,
+        });
+    }
 }
 
 shift(@{$kfgameshared::gamedata->{forceplay}});
 if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
 	kfgameshared::checkplays();
     delete ($kfgameshared::gamedata->{forceplay});
+    $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `forcedaction`) VALUES(?, ? )", undef, (0,  0));
 }else {
     my $string = to_json($kfgameshared::gamedata->{forceplay}[0]);
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `forcedaction`) VALUES(?, ? )", undef, (0,  $string));

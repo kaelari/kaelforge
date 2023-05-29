@@ -4,6 +4,7 @@ local $/;
 use strict;
 use CGI qw(param);
 
+my $r = shift;
 $kfplatformshared::dbh=kfdbplatform::connectdb();
 
 my $response = {};
@@ -14,4 +15,5 @@ $response->{messages}=$kfplatformshared::dbh->selectall_arrayref("SELECT `date`,
 
 
 kfplatformshared::end($response);
-#warn "sent ".Data::Dumper::Dumper($response)." successfullly";
+warn "sent ".Data::Dumper::Dumper($response)." successfullly";
+

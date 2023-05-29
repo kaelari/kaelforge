@@ -1,10 +1,10 @@
 package kfplatformshared;
 use strict "vars";
-use lib qw(. /usr/lib/cgi-bin/kfplatform);
+use lib qw(. /usr/lib/perl);
 use Time::HiRes qw(gettimeofday);
 
 
-use CGI::Carp qw(fatalsToBrowser set_message);
+use CGI::Carp qw(fatalsToBrowser);
 use CGI qw(param);
 use POSIX qw(ceil floor);
 use kfdbconnect;
@@ -59,6 +59,7 @@ sub initquiet {
 		$response -> {status} = "failed";
 		$response->{message} = "No session found";
 		end($response);
+		exit;
 	}
 	my $sql = "SELECT * from sessionId WHERE session like ?;";
 	my $sessiondata=$dbh->selectrow_hashref($sql, undef, ($sid));
@@ -138,12 +139,15 @@ sub end {
         $result->{status}= "Success";
     }
     my $response = to_json($result);
+    print "Cache-Control: max-age=0, no-cache, no-store\n";
+    print "Pragma: no-cache\n";
     print "Content-Type: Text/JSON\n\n";
+    
     print "$response";
     
     
     
-    exit;
+    
     
 }
 

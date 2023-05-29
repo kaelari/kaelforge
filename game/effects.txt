@@ -1,0 +1,51 @@
+Destroy:  destroys the target, no mod 
+
+extraplay: valid targets: currentplayer grants mod extra plays to the current player
+
+Negate: Valid targets: self or target#  removes all instances of keyword (mod) and prevents it from being gained
+i.e. Negate target0 Breakthrough
+
+Keyword: Valid targets: self or target#  grants keyword (mod) which has an optional number
+i.e. Keyword target0 Armor 5
+
+levelinhand: Valid Targets: target#  (must be cardinhand) Levels the card in hand without discard
+i.e. levelinhand target0 
+
+Discard: Valid Targets: target# (mustbe cardinhand) Discards the chosen card.
+i.e. discard target0
+
+Level: Valid Targets: target# (must be cardinhand) Discard and level the chosen card
+i.e. level target0 
+
+Heal: Valid targets (controller, opponent, target#) heals a player or creature, creatures can only heal to their maxhealth. mod is amount. note this doesn't allow the player to choose creature or player
+i.e. heal target0 10
+i.e. heal controller 10
+
+stats: Valid Targets: target#,  Adjust stats by mod can be +, - or =. = will set to that value.
+i.e. stats target0 +1/+1
+i.e. stats target0 =0/+0   (set attack to 0)
+
+draw: Valid targets: controller, opponent,  Draw mod cards
+i.e. draw controller 3
+
+Replace:  Creates a new creature of mod and replace the existing target
+i.e. replace target0 112 
+
+spawn: Valid Targets: AllUnopposedEnemies, randomemptylane, samelane, emptylane, spawns creature (mod) in the lane specified
+i.e. spawn samelane 112
+
+Damage: Valid Targets: AllEnemyCreatures, opponent, controller, target#, self, mod can be range, deals mod damage to target
+i.e. Damage opponent 1-15 
+
+addtrigger: Valid targets (target0)  Adds a trigger (mod) to a creature
+i.e. addtrigger target0 5
+
+
+
+
+
+
+
+
+
+            

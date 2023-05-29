@@ -91,9 +91,24 @@ kfplatformshared::end($response);
 
 sub generatepicks {
 	my $draftdata=shift;
-    my $rarity = "common";
-    if (rand(100) < 0){
-       # $rarity="rare";
+	my $rarity = "common";
+	if ((scalar @{$draftdata->{cardspicked}} )== 0 ){
+        $rarity = "Heroic";
+        if (rand(100)<10){
+            $rarity = "Legendary";
+        }
+	}else {
+    
+        my $result = rand(100);
+        if ($result < 20){
+            $rarity="rare";
+        }
+        if ($result <= 5){
+            $rarity="heroic";
+        }
+        if ($result <= 1){ 
+            $rarity = "Legendary";
+        }
     }
     my $factions="";
     if (scalar keys %{$draftdata->{factions}} >= 2 ){

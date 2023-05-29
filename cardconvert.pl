@@ -10,13 +10,13 @@ local $/;
 my $data =<FILE>;
 my $result = parse_csv($data);
 #print Dumper($result);
-$z=1;
+$z=480;
 my %names;
 for( my $i=0; $i+39< @{$result}; $i+=39) {
 	
 	my $a=0;
 	if ($result->[$i+31] eq "set1"){
-		if ($result->[$i+5] eq "Creature"){
+		if ($result->[$i+5] eq "Spell"){
 			$names{ $result->[$i+1] } +=1;
 			my $levelsto=0;
 			if ($names{ $result->[$i+1] } == 3){
@@ -42,7 +42,9 @@ for( my $i=0; $i+39< @{$result}; $i+=39) {
 				}
 			}
 			#print "\n";
-			print "INSERT INTO `carddata` (`CardId`, `Name`, `levelsto`, `levels from`, `level`, `CardType`, `cost`, `subtype`, `Text`, `Cardart`, `Attack`, `Health`, `Faction`, `rarity`, `keywords`) VALUES ( $z, '".$result->[$i+1]."', $levelsto, $levelsfrom, ".$names{ $result->[$i+1] }.", '". $result->[$i+5]."', 1, '".$result->[$i+9]."', '".$text."', '".$result->[$i+17]."', ".$result->[$i+10].", ".$result->[$i+11].", '".$result->[$i+8]. "', '".$rarity."', '".$result->[$i+7]."');\n";
+			my $name = $result->[$i+1];
+			$name=~s/'/\\'/g;
+			print "INSERT INTO `carddata` (`CardId`, `Name`, `levelsto`, `levels from`, `level`, `CardType`, `cost`, `subtype`, `Text`, `Cardart`, `Attack`, `Health`, `Faction`, `rarity`, `keywords`) VALUES ( $z, '".$name."', $levelsto, $levelsfrom, ".$names{ $result->[$i+1] }.", '". $result->[$i+5]."', 1, '".$result->[$i+9]."', '".$text."', '".$result->[$i+17]."', 0, 0, '".$result->[$i+8]. "', '".$rarity."', '".$result->[$i+7]."');\n";
 			
 			#print "$result->[$i+1], $result->[$i+2], $result->[$i+5], \"$result->[$i+6]\", $result->[$i+7], $result->[$i+8], $result->[$i+9], $result->[$i+10]/ $result->[$i+11], set: $result->[$i+31]\n";
 			$z++;

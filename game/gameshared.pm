@@ -91,10 +91,32 @@ sub loadgame {
 
 sub checkstatebased {
 	#check if Creatures died
-	my $game=shift;
+	my $game=(shift or $kfgameshared::game);
 	my $lanestring;
 	my @triggers;
+	
+	
 	for my $lane (1..5){
+        if ($gamedata->{lane}{1}{$lane} > 0 ){
+			if ($gamedata->{objects}{$gamedata->{lane}{1}{$lane}}{newtriggers}){
+				my $object = $gamedata->{objects}{ $gamedata->{lane}{1}{$lane} };
+				if (!$object->{triggers}){
+					$object->{triggers}=[];
+				}
+				push (@{$object->{triggers}}, @{$object->{newtriggers}});
+				delete $object->{newtriggers};
+			}
+		}
+        if ($gamedata->{lane}{2}{$lane} > 0 ){
+			if ($gamedata->{objects}{$gamedata->{lane}{2}{$lane}}{newtriggers}){
+				my $object = $gamedata->{objects}{ $gamedata->{lane}{2}{$lane} };
+				if (!$object->{triggers}){
+					$object->{triggers}=[];
+				}
+				push (@{$object->{triggers}}, @{$object->{newtriggers}});
+				delete $object->{newtriggers};
+			}
+		}
 		if ($gamedata->{lane}{1}{$lane}>0 and $gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{"Health"} <= 0){
 			my $died=$gamedata->{objects}{ $gamedata->{lane}{1}{$lane} };
 			
@@ -122,17 +144,19 @@ sub checkstatebased {
 		checktriggers($triggers->[0], $triggers->[1]);
 	}
 	my $z=0;
-	debuglog("Checking static abilities");
+	
 	while ($z < $gamedata->{objectnumber}){
 		unless ($gamedata->{objects}{$z} and $gamedata->{objects}{$z}{zone}) {
 				$z++;
 				next;
 		};
 		foreach my $static (@{$gamedata->{objects}{$z}{static}}) {
+			if ($allstatic->{$static}{"zone"} ne $gamedata->{objects}{$z}{zone}){
+                next;
+			}
 			#check if this ability should be active
 # 			debuglog("Checking this static ability of $z. $static");
 			if ($allstatic->{$static}{"target"} eq "self"){
-				debuglog("This is a self static");
 				if (checktarget($allstatic->{$static}{conditional}, $z, $z, $gamedata->{objects}{$z}{owner} )) {
 					#debuglog("We should be under this effect");
 					#we should be under effect, lets check if we already are
@@ -293,8 +317,7 @@ sub checkstatebased {
 	
 	checkendgame();
 	if (scalar @triggers > 0 ){ 
-#         debuglog("checking statebased again");
-		checkstatebased();
+		checkstatebased($game);
 	}
 }
 
@@ -320,8 +343,14 @@ sub checktriggers {
 		$opp=1;
 	}
 	my $z=0;
-	debuglog("Checking triggers for $type ");
-	while ($z < $gamedata->{objectnumber}){
+	debuglog("Checking triggers for $type");
+	if (!ref $triggerobject && defined($triggerobject) && $triggerobject > 0){
+        $triggerobject=$gamedata->{objects}{$triggerobject};
+	}
+	if ($triggerobject){
+        debuglog($triggerobject->{id});
+	}
+	while ($z <= $gamedata->{objectnumber}){
 		unless ($gamedata->{objects}{$z} and $gamedata->{objects}{$z}{zone}) {
 				$z++;
 				next;
@@ -330,10 +359,10 @@ sub checktriggers {
 		if (@{$gamedata->{objects}{$z}{triggers}} > 0){
 			foreach my $trigger (@{$gamedata->{objects}{$z}{triggers}}){
 					#does this trigger trigger?
+					
 					if ($alltriggers->{$trigger}{type} ne $type or $alltriggers->{$trigger}{zone} ne $gamedata->{objects}{$z}{zone}){
 						next;
 					}
-					debuglog("Checking inner trigger, $z, $trigger, ".Data::Dumper::Dumper($triggerobject).", $type, $weare");
 					checktriggersinner ( $gamedata->{objects}{$z}, $trigger, $triggerobject, $type, $weare, $variables, $secondobject);
 				}
 		}
@@ -381,7 +410,7 @@ sub checktriggersinner {
 	my $triggerobject = shift;
 	my $type = shift;
 	my $weare = shift;
-	my $variables= shift;
+	my $variables= (shift or {});
 	my $secondobject = shift;
 	
 	my $opp = 2;
@@ -402,7 +431,7 @@ sub checktriggersinner {
 						my $trigger2 = $alltriggers->{$trigger}{"trigger$i"};
 						my $compare2 = $alltriggers->{$trigger}{"compare$i"};
 						my $target2 = $alltriggers->{$trigger}{"target$i"};
-                        debuglog("$self, $target, $trigger, $compare2, $target2, $variables");
+                        debuglog("$self, $target, $trigger2, $compare2, $target2, $variables");
  						if (!triggercompare($self, $target, $trigger2, $compare2, $target2, $variables, $secondobject)) {
 							return;
 						}
@@ -410,31 +439,20 @@ sub checktriggersinner {
 					
 					#trigger does in fact trigger
 					
+                    if ($triggerobject){ 
+                        $variables->{triggerobject}=$triggerobject;
+                    }
+					if ($secondobject){
+                        $variables->{secondobject}=$secondobject;
+					}
+                    $variables->{self}=$self;
+                    
 					warn "inner check: $self, ".Dumper($object).", ".Dumper($alltriggers->{$trigger}).", $type, $weare";
 					
 					
 					my @targets;
-					if ($alltriggers->{$trigger}{targettype} eq "allcards"){
-						debuglog("this is an allcards trigger, checking all cards for validity");
-						my ($targets, $totalvalidtargets) = findtargetsallzones($weare, $alltriggers->{$trigger}{targetindex});
-						
-						if ($totalvalidtargets == 0 ){
-							debuglog("no targets for this trigger");
-							
-							return;
-						}
-						if ( !$gamedata->{forceplay} ) {
-							$gamedata->{forceplay}=[];
-						}
-						push (@{$gamedata->{forceplay}}, {trigger => $trigger, revealtargets => 1,
-						source => $object, targets=>[{'text' => $alltargets->{$target}{text},
-							l => [],
-							o => [],
-							raw => $targets }] } );
-							
-					
-					}elsif ($alltriggers->{$trigger}{targettype} eq "self"){						
-						push @targets, $object;
+					if ($alltriggers->{$trigger}{targettype} eq "secondobject"){
+                        push @targets, $secondobject;
 						my @effects = split (/,/, $alltriggers->{$trigger}{effectindexes});
 								foreach my $effect (@effects) {
 									applyeffects( {
@@ -442,41 +460,148 @@ sub checktriggersinner {
 										effecttarget => $alleffects->{$effect}{effecttarget},
 										effectmod1 => $alleffects->{$effect}{effectmod1}, 
 										expires => $alleffects->{$effect}{expires},
-										target => [$object], 
-										effectcontroller => $self->{owner}
+										target => [$secondobject], 
+										effectcontroller => $self->{owner},
+										variables=> $variables,
 										} );
 									debuglog("applying effect! $effect -  $alleffects->{$effect}{effecttype}, $alleffects->{$effect}{effecttarget},$alleffects->{$effect}{effectmod1}, [$target], $weare ");
 								}
 								
-					}	elsif  ($alltriggers->{$trigger}{targettype} eq "single") {
-						debuglog("player choice trigger");
-						my ($lane, $olane, $totalvalidtargets)  = findtargets($weare, $alltriggers->{$trigger}{targetindex}, $self->{id}); 
-						foreach my $target ( @{$lane}){
-							push @targets, $gamedata->{lane}{$weare}{$target};
-						}
-						foreach my $target ( @{$olane}){
-							push @targets, $gamedata->{lane}{$opp}{$target};
+					}
+					if ($alltriggers->{$trigger}{targettype} eq "allcards"){
+						debuglog("this is an allcards trigger, checking all cards for validity");
+						my ($targets, $totalvalidtargets) = findtargetsallzones($weare, $alltriggers->{$trigger}{targetindex});
+						
+						if ($totalvalidtargets < $alltargets->{ $alltriggers->{$trigger}{targetindex} }{mintargets} ){
+							debuglog("no targets for this trigger");
+							
+							return;
 						}
 						
+						if ($alltargets->{ $alltriggers->{$trigger}{targetindex} }{Selector} eq "Player"){
+						
+                            if ( !$gamedata->{forceplay} ) {
+                                $gamedata->{forceplay}=[];
+                            }
+                            push (@{$gamedata->{forceplay}}, {trigger => $trigger, revealtargets => 1,
+						source => $object, targets=>[{'text' => $alltargets->{$target}{text},
+                                l => [],
+                                o => [],
+                                raw => $targets }] } );
+                        }
+                        if ($alltargets->{ $alltriggers->{$trigger}{targetindex} }{Selector} eq "Random"){
+                            my @effects = split (/,/, $alltriggers->{$trigger}{effectindexes});
+                            @targets = shuffle(@{$targets});
+                            foreach my $effect (@effects) {
+                                applyeffects( {
+                                    effecttype => $alleffects->{$effect}{effecttype}, 
+                                    effecttarget => $alleffects->{$effect}{effecttarget},
+                                    effectmod1 => $alleffects->{$effect}{effectmod1}, 
+                                    expires => $alleffects->{$effect}{expires},
+                                    target => \@targets, 
+                                    effectcontroller => $self->{owner},
+                                    variables => $variables,
+                                    } );
+                              }
+                        }
+					}elsif ($alltriggers->{$trigger}{targettype} eq "self"){						
+						push @targets, $object;
+						my @effects = split (/,/, $alltriggers->{$trigger}{effectindexes});
+						
+								foreach my $effect (@effects) {
+									applyeffects( {
+										effecttype => $alleffects->{$effect}{effecttype}, 
+										effecttarget => $alleffects->{$effect}{effecttarget},
+										effectmod1 => $alleffects->{$effect}{effectmod1}, 
+										expires => $alleffects->{$effect}{expires},
+										target => [$object], 
+										effectcontroller => $self->{owner},
+										variables => $variables,
+										} );
+									debuglog("applying effect! $effect -  $alleffects->{$effect}{effecttype}, $alleffects->{$effect}{effecttarget},$alleffects->{$effect}{effectmod1}, [$target], $weare ");
+								}
+								
+					}	elsif  ($alltriggers->{$trigger}{targettype} eq "multi") {
+						debuglog("multi trigger");
+						my @targetindexes = split(/,/, $alltriggers->{$trigger}{targetindexes});
+						my @targetinfo;
+						foreach my $index (@targetindexes){
+                            debuglog("index is $index");
+                            my ($lane, $olane, $totalvalidtargets, $variables)  = findtargets($weare, $index, $self->{id}); 
+                            						
+                            if ($totalvalidtargets < $alltargets->{$index}{mintargets} ){
+                                return;
+                            }
+                            my $targetinfo ={};
+                            $targetinfo->{text} = $alltargets->{$index}{text};
+                            $targetinfo->{l} = $lane;
+                            $targetinfo->{o} = $olane;
+                            push (@targetinfo, $targetinfo);
+                        }
+                        
+						if ( !$gamedata->{forceplay} ) {
+							$gamedata->{forceplay}=[];
+						}
+						push (@{$gamedata->{forceplay}}, {trigger => $trigger, source => $object, targets=> \@targetinfo } );
+							
+                    }elsif  ($alltriggers->{$trigger}{targettype} eq "single") {
+						debuglog("player choice trigger");
+						my ($lane, $olane, $raw, $totalvalidtargets, $variables, $players)  = findtargets_revised($weare, $alltriggers->{$trigger}{targetindex}, $self->{id}); 
+						
+						
+						foreach my $target ( @{$lane}){
+                            if ($target =~/^\d+$/){
+                                push @targets, $gamedata->{lane}{$weare}{$target};
+							}else {
+                                push (@targets, $target);
+							}
+						}
+						foreach my $target ( @{$olane}){
+                            if ($target =~/^\d+$/){
+                                push @targets, $gamedata->{lane}{$opp}{$target};
+                            }else {
+                                push (@targets, $target);
+                            }
+						}
 						if ($totalvalidtargets == 0 ){
 							return;
 						}
 						
-							
-						if ( !$gamedata->{forceplay} ) {
-							$gamedata->{forceplay}=[];
-						}
-						push (@{$gamedata->{forceplay}}, {trigger => $trigger, source => $object, targets=>[{'text' => $alltargets->{$alltriggers->{$trigger}{targetindex}}{text},
-							
-							l => $lane,
-							o => $olane }] } );
+						if ($alltargets->{ $alltriggers->{$trigger}{targetindex} }{Selector} eq "Random"){
+                            debuglog("Random target!". Data::Dumper::Dumper(\@targets));
+                            @targets = shuffle(@targets);
+                            $variables->{source} = $object;
+                            my @effects = split (/,/, $alltriggers->{$trigger}{effectindexes});
 						
+								foreach my $effect (@effects) {
+									applyeffects( {
+										effecttype => $alleffects->{$effect}{effecttype}, 
+										effecttarget => $alleffects->{$effect}{effecttarget},
+										effectmod1 => $alleffects->{$effect}{effectmod1}, 
+										expires => $alleffects->{$effect}{expires},
+										target => \@targets, 
+										effectcontroller => $self->{owner},
+										variables => $variables,
+										} );
+									debuglog("applying effect! $effect -  $alleffects->{$effect}{effecttype}, $alleffects->{$effect}{effecttarget},$alleffects->{$effect}{effectmod1}, [$target], $weare ");
+								}
+						}else {
+						
+							
+                            if ( !$gamedata->{forceplay} ) {
+                                $gamedata->{forceplay}=[];
+                            } 
+                            push (@{$gamedata->{forceplay}}, {trigger => $trigger, source => $object, targets=>[{'text' => $alltargets->{$alltriggers->{$trigger}{targetindex}}{text},
+                                l => $lane,
+                                o => $olane,
+                                players=> $players}] } );
+                        }
 						
 					}elsif ($alltriggers->{$trigger}{targettype} eq "cardinhand"){
 						 my @raw;
 						my $totalvalidtargets= 0;
 						foreach my $card (@{$gamedata->{players}{$weare}{hand}} ){
-							if (checktarget($alltriggers->{$trigger}{targetindex}, $card, $weare)){
+							if (checktarget($alltriggers->{$trigger}{targetindex}, $card, $object, $weare)){
 								push (@raw, $card);
 								$totalvalidtargets ++;
 							}
@@ -499,7 +624,10 @@ sub checktriggersinner {
 					} elsif ($alltriggers->{$trigger}{targettype} eq "all"){
 						#need to check all possible targets;
 						debuglog("all type trigger");
-						my ($lane, $olane, $totalvalidtargets)  = findtargets($weare, $alltriggers->{$trigger}{targetindex}, $self->{id}); 
+						my ($lane, $olane, $totalvalidtargets, $tmp)  = findtargets($weare, $alltriggers->{$trigger}{targetindex}, $self->{id}); 
+						foreach my $key (keys %{$tmp}){
+                            $variables->{$key}=$tmp->{$key};
+                        }
 						foreach my $target ( @{$lane}){
 							push @targets, $gamedata->{lane}{$weare}{$target};
 						}
@@ -507,7 +635,7 @@ sub checktriggersinner {
 							push @targets, $gamedata->{lane}{$opp}{$target};
 						}
 						
-						if ($totalvalidtargets == 0 ){
+						if ($totalvalidtargets < $alltargets->{$alltriggers->{$trigger}{targetindex}}{mintargets} ){
 							return;
 						}
 						foreach my $target (@targets) {
@@ -522,8 +650,9 @@ sub checktriggersinner {
 										effecttarget => $alleffects->{$effect}{effecttarget},
 										effectmod1 => $alleffects->{$effect}{effectmod1}, 
 										expires => $alleffects->{$effect}{expires},
-										target => [$target], 
-										effectcontroller => $self->{owner}
+										target => [$target, $object], 
+										effectcontroller => $self->{owner},
+										variables=> $variables,
 										} );
 									debuglog("applying effect! $effect -  $alleffects->{$effect}{effecttype}, $alleffects->{$effect}{effecttarget},$alleffects->{$effect}{effectmod1}, [$target], $weare ");
 								}
@@ -538,24 +667,29 @@ sub checktriggersinner {
 									effectmod1 => $alltriggers->{$trigger}{effectmod1},
 									expires => $alltriggers->{$trigger}{expires},
 									target => [$target],
-									effectcontroller => $self->{owner}
+									effectcontroller => $self->{owner},
+									variables=> $variables,
 									 });
 							}
 						}
 						
 					}elsif ($triggerobject) {
+                        debuglog("We're trying to apply effect to a trigger object");
+                        
 						push @targets, $object;
 						push @targets, $triggerobject->{id};
-						applyeffects( {
-							effecttype=> $alltriggers->{$trigger}{effecttype},
-							effecttarget=> $alltriggers->{$trigger}{effecttarget},
-							effectmod1=> $alltriggers->{$trigger}{effectmod1},
-							expires => $alltriggers->{$trigger}{expires},
-							target => \@targets,
-							effectcontroller => $self->{owner},
-							 
-							});
-						
+						my @effects = split (/,/, $alltriggers->{$trigger}{effectindexes});
+                        foreach my $effect (@effects) {
+                            applyeffects( {
+										effecttype => $alleffects->{$effect}{effecttype}, 
+										effecttarget => $alleffects->{$effect}{effecttarget},
+										effectmod1 => $alleffects->{$effect}{effectmod1}, 
+										expires => $alleffects->{$effect}{expires},
+										target => \@targets, 
+										effectcontroller => $self->{owner},
+										variables=> $variables,
+										} );
+						}
 					}else {
 						push @targets, $object;
 						applyeffects({
@@ -605,7 +739,9 @@ sub applyeffects {
 	my $variables = ($data->{variables} or {});
 	
 	
-	
+	if (! defined $effectmod1){
+        $effectmod1 = "";
+	}
 	
 	foreach my $target (@{$targets}){
 		if (ref($target) eq 'HASH'){
@@ -621,13 +757,7 @@ sub applyeffects {
 		$targetindex= $1;
 	}
 	
-	if ($data->{expires}){
-		debuglog("this effect will expire in $data->{expires} turns");
-		if (!defined $gamedata->{objects}{$targets->[$targetindex]}{expires} ){
-			$gamedata->{objects}{$targets->[$targetindex]}{expires} = [];
-		}
-		push(@{$gamedata->{objects}{$targets->[$targetindex]}{expires}}, { turns=> $data->{expires}, data=> $data});
-	}
+	
 	
 	
 	
@@ -636,58 +766,93 @@ sub applyeffects {
             $targetcontroller = $gamedata->{objects}{$targets->[$targetindex]}{owner};
 		}
 	}
+	debuglog(Data::Dumper::Dumper($variables));
 	if ($effectmod1 =~/variable.(.*)$/i){
-		if (!$variables->{$1}){
-			debuglog(Data::Dumper::Dumper($variables));
-		}
-		$effectmod1 = $variables->{$1};
+        my @results = split(/\./, $effectmod1);
+        if (@results == 2){
+            $effectmod1 = $variables->{$results[1]};
+        }
+        if ($results[1] eq "target0"){
+            my $object;
+            debuglog(Data::Dumper::Dumper($targets));
+            if ($targets->[0] =~/^l(\d+)/){
+                $object = $gamedata->{lane}{$effectcontroller}{$1};
+            }elsif ($targets->[0] =~/^ol(\d+)/){
+                my $opp = 2;
+                if ($effectcontroller == 2){
+                    $opp = 1;
+                }
+                $object = $gamedata->{lane}{$opp}{$1};
+            }else {
+                $object = $targets->[0];
+            }
+            
+            
+            $effectmod1 = $gamedata->{objects}{$object}{$results[2]};
+        }elsif (@results == 3){
+            $effectmod1 = $variables->{$results[1]}{$results[2]};
+        }
 	}
-	if ($effectmod1 =~ /builtin.(.*)$/i){
-		if ($1 eq "alloyininhand"){
-			my $count = 0;
-			foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
-				if ($gamedata->{objects}{$card}{Faction} eq "Alloyin"){
-					$count +=1;
-				}
-			}
-			$effectmod1 = $count;
-		}
-		if ($1 eq "uterrainhand"){
-			my $count = 0;
-			foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
-				if ($gamedata->{objects}{$card}{Faction} eq "Uterra"){
-					$count +=1;
-				}
-			}
-			$effectmod1 = $count;
-		}
-		if ($1 eq "nekriuminhand"){
-			my $count = 0;
-			foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
-				if ($gamedata->{objects}{$card}{Faction} eq "Nekrium"){
-					$count +=1;
-				}
-			}
-			$effectmod1 = $count;
-		}
-		if ($1 eq "tempysinhand"){
-			my $count = 0;
-			foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
-				if ($gamedata->{objects}{$card}{Faction} eq "Tempys"){
-					$count +=1;
-				}
-			}
-			$effectmod1 = $count;
-		}
-		
+	if (defined $effectmod1){
+        if ($effectmod1 =~ /builtin.(.*)$/i){
+            if ($1 eq "alloyininhand"){
+                my $count = 0;
+                foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
+                    if ($gamedata->{objects}{$card}{Faction} eq "Alloyin"){
+                        $count +=1;
+                    }
+                }
+                $effectmod1 = $count;
+            }
+            if ($1 eq "uterrainhand"){
+                my $count = 0;
+                foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
+                    if ($gamedata->{objects}{$card}{Faction} eq "Uterra"){
+                        $count +=1;
+                    }
+                }
+                $effectmod1 = $count;
+            }
+            if ($1 eq "nekriuminhand"){
+                my $count = 0;
+                foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
+                    if ($gamedata->{objects}{$card}{Faction} eq "Nekrium"){
+                        $count +=1;
+                    }
+                }
+                $effectmod1 = $count;
+            }
+            if ($1 eq "tempysinhand"){
+                my $count = 0;
+                foreach my $card (@{$gamedata->{players}{$effectcontroller }{hand}}){
+                    if ($gamedata->{objects}{$card}{Faction} eq "Tempys"){
+                        $count +=1;
+                    }
+                }
+                $effectmod1 = $count;
+            }
+            
+        }
 	}
 	if (!$effecttype){
  		debuglog("empty effecttype!".caller);
 		exit;
 	}
 	debuglog("applying: $effecttype to $effecttarget with mod of $effectmod1 . $effectcontroller.");
-	
-	
+	debuglog(Data::Dumper::Dumper($targets));
+	if ($data->{expires}){
+		debuglog("this effect will expire in $data->{expires} turns");
+		if (!defined $gamedata->{objects}{$targets->[$targetindex]}{expires} ){
+			$gamedata->{objects}{$targets->[$targetindex]}{expires} = [];
+		}
+		my %info = ();
+		$info{effecttype}=$effecttype;
+		$info{effecttarget}=$effecttarget;
+		$info{effectmod1}=$effectmod1;
+		$info{targetindex}=($data->{targetindex} or 0);
+		
+		push(@{$gamedata->{objects}{$targets->[$targetindex]}{expires}}, { turns=> $data->{expires}, data=> \%info});
+	}
 	my $opp=1;
 	if ($effectcontroller == 1 ){
 		$opp=2;
@@ -748,10 +913,18 @@ sub applyeffects {
 			$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `draws`) VALUES(?, ?)", undef, ($gamedata->{players}{$effectcontroller}{playerid}, $gamedata->{players}{$effectcontroller }{hand}[-1] ));
 			
 	}
+	if (lc($effecttype) eq "extrabattlethisturn"){
+        debuglog("EXTRA BATTLES! for $targets->[$targetindex]");
+        if ($effecttarget eq "target$targetindex"){
+            debuglog("$effectmod1 EXTRA BATTLES! for $targets->[$targetindex]");
+			$gamedata->{objects}{$targets->[$targetindex]}{battlesthisturn} += $effectmod1;
+		}
+	}
 	if (lc($effecttype) eq "destroy"){
 		if ($effecttarget eq "target$targetindex"){
 			$gamedata->{objects}{$targets->[$targetindex]}{Health}= 0;
 		}
+		
 	}
 	if ($effecttype eq "extraplay"){
 		if ($effecttarget eq "currentplayer"){
@@ -867,6 +1040,37 @@ sub applyeffects {
 		$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `draws`) VALUES(?, ?)", undef, ($gamedata->{players}{$player}{playerid}, -$targets->[$targetindex] ));
 
 	}
+	
+	if ($effecttype eq "DiscardDownTo") {
+        my $player;
+        if ($effecttarget eq "owner"){
+            debuglog("Targetting owner: ".$gamedata->{objects}{ $targets->[$targetindex] }{"owner"});
+            $player = $gamedata->{objects}{ $targets->[$targetindex] }{"owner"};
+		}else {
+            if ($gamedata->{objects}{ $targets->[$targetindex] }{"owner"} == 1){
+                $player = 2;
+            }else {
+                $player = 1;
+            }
+        }
+        my $z=0;
+		while (@{$gamedata->{players}{$player}{hand}} > $effectmod1 && $z<=200){
+            $z++;
+            my $cardindex = int rand (@{$gamedata->{players}{$player}{hand}});
+            
+            my $cardid= $gamedata->{players}{$player}{hand}[$cardindex];
+            debuglog("discarding: $cardindex, $cardid, ".scalar @{$gamedata->{players}{$player}{hand}});
+		
+            $gamedata->{objects}{$cardid}{"zone"}="discard";
+            splice(@{$gamedata->{players}{$player }{hand}}, $cardindex, 1);
+            
+            push @{$gamedata->{players}{$player}{discard}}, $cardid;
+        
+            $dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `draws`) VALUES(?, ?)", undef, ($gamedata->{players}{$player}{playerid}, -$cardid ));
+        }
+	}
+	
+	
 	if ($effecttype eq "level") {
 		if ($gamedata->{"objects"}{ $targets->[$targetindex] }{"levelsto"} == 0 ){
 			return;
@@ -977,12 +1181,61 @@ sub applyeffects {
 			drawcard($opp, $effectmod1);
 		}
 	}
-	
+	if (lc($effecttype) eq "drag"){
+        my $object = $targets->[$targetindex];
+        if ($object =~/l(\d)/i){
+            $object = $gamedata->{lane}{$effectcontroller}{$1};
+        }elsif ( $object =~/ol(\d)/i) {
+            my $opp = 1;
+            if ($effectcontroller == 1){
+                $opp = 2;
+            }
+            $object = $gamedata->{lane}{$opp}{$1};
+        }
+        my $lane=0;
+        if ($effectmod1 =~/target(\d+)/i){
+            $lane = $targets->[$1];
+            if ($lane =~/l(\d)/) {
+                $lane = $1;
+            }
+            if ($lane =~/ol(\d)/) {
+                $lane = $1;
+            }
+            
+        }else {
+            return;
+        }
+        if ($object and $lane){
+             my $oldlane = $gamedata->{objects}{$object}{lane};
+             my $side = $gamedata->{objects}{$object}{owner};
+             if ($gamedata->{lane}{$side}{$lane} > 0 ){
+                debuglog("Lane not empty!");
+                return;
+             }
+             $gamedata->{lane}{$side}{ $oldlane } = 0;
+             $gamedata->{lane}{$side}{ $lane } = $object;
+             $gamedata->{objects}{$object}{lane} = $lane;
+             my $objectstring = "$object:".to_json($gamedata->{objects}{$object} );
+             $dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$side:$oldlane:0;$side:$lane:$object", $objectstring ));
+             my $opp = 1;
+             if ($side == 1){
+                $opp = 2;
+             }
+             checktriggers("Flank", $gamedata->{objects}{$object}, {}, $gamedata->{objects}{ $gamedata->{lane}{$opp}{$lane} } );
+        }
+        
+        
+	}
 	if (lc($effecttype) eq "move"){
+        
+	
         if ($effecttarget eq "emptylane" ) {
-            debuglog("Attempting to move! ");
-            $targets->[$targetindex] =~/l(\d)/;
-            my $lane = $1;
+            debuglog("Attempting to move! $targets->[$targetindex] ".Data::Dumper::Dumper($targets));
+            my $lane=0;
+            if ($targets->[$targetindex] =~/l(\d)/) {
+                $lane = $1;
+            }
+            
             if ($lane){
                 debuglog("lane is defined, moving to $lane");
                 my $object = $variables->{source};
@@ -992,7 +1245,7 @@ sub applyeffects {
                 $gamedata->{objects}{$object}{lane} = $lane;
                 my $objectstring = "$gamedata->{lane}{$effectcontroller}{$lane}:".to_json($gamedata->{objects}{$object} );
                 $dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$effectcontroller:$oldlane:0;$effectcontroller:$lane:$object", $objectstring ));
-                checktriggers("flank", $gamedata->{objects}{$object});
+                checktriggers("Flank", $gamedata->{objects}{$object}, {}, $gamedata->{objects}{ $gamedata->{lane}{$opp}{$lane} } );
             }
         }
 		if ($effecttarget eq "opposingCreature"){
@@ -1003,10 +1256,12 @@ sub applyeffects {
 					if ($target>0){
 						$gamedata->{lane}{$opp}{$target}=$gamedata->{lane}{$opp}{$lane};
 						$gamedata->{lane}{$opp}{$lane} = 0;
+						$gamedata->{objects}{ $gamedata->{lane}{$opp}{$lane}}{lane} = $target;
+						
 						#$gameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`) VALUES(?, ?)", undef, (0, "$opp:$lane:0;$opp:$target:$gamedata->{lane}{$opp}{$target}"));
 						my $objectstring = "$gamedata->{lane}{$opp}{$lane}:".to_json($gamedata->{objects}{$gamedata->{lane}{$opp}{$lane}});
 						$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$opp:$lane:0;$opp:$target:$gamedata->{lane}{$opp}{$target}", $objectstring ));
-								
+                        checktriggers("Flank", $gamedata->{objects}{$gamedata->{lane}{$opp}{$lane}}, {}, $gamedata->{objects}{ $gamedata->{lane}{$effectcontroller}{$target} } );
 					}
 				}
 			}
@@ -1021,7 +1276,7 @@ sub applyeffects {
 		$gamedata->{objects}{$object}{ss}=1;
 		my $objectstring = "$object:".to_json($gamedata->{objects}{$object});
 		$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$gamedata->{objects}{$targets->[$targetindex]}{owner}:$targetlane:$object", $objectstring ));
-		kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object});
+		kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object}, {Forged => 0});
 			
 	}
 	if (lc($effecttype) eq "spawn"){ 
@@ -1031,15 +1286,19 @@ sub applyeffects {
 					my $object =  createobject($effectmod1, $effectcontroller, $lane );
 					$gamedata->{lane}{$effectcontroller}{$lane}=$object;
 					$gamedata->{objects}{$object}{ss}=1;
+					
 					my $objectstring = "$object:".to_json($gamedata->{objects}{$object});
 					$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$effectcontroller:$lane:$object", $objectstring ));
-					kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object});
+					kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object}, {Forged => 0});
    
 				}
 			}
 		}
 		if ($effecttarget eq "randomemptylane"){
 			#find all empty lanes so we can pick one at random
+			if ($effectmod1 =~/target(\d)/i){
+                $effectmod1 = $gamedata->{objects}{$targets->[$1]}{CardId};
+			}
 			debuglog("we are $effectcontroller and spawning something( $effectmod1 ) in a random lane. $gamedata->{objects}{$targets->[0]}{owner}");
 			my $targetlane = randomemptylane( $effectcontroller  );
 			if ( $targetlane > 0){
@@ -1048,7 +1307,10 @@ sub applyeffects {
 				$gamedata->{objects}{$object}{ss}=1;
 				my $objectstring = "$object:".to_json($gamedata->{objects}{$object});
 				$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$effectcontroller:$targetlane:$object", $objectstring ));
-				kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object});
+				debuglog("CHECKING CREATURE TRAINED TRIGGER!");
+				kfgameshared::checktriggers("Creaturetrained", $gamedata->{objects}{$object}, {Forged => 0} );
+			}else {
+                debuglog("we're out of lanes!");
 			}
 		}
 		if ($effecttarget eq "samelane"){
@@ -1059,7 +1321,7 @@ sub applyeffects {
 				$gamedata->{objects}{$object}{ss}=1;
 				my $objectstring = "$object:".to_json($gamedata->{objects}{$object});
 				$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$effectcontroller:$targetlane:$object", $objectstring ));
-				kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object});
+				kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object}, {Forged => 0});
 			
 		}
 		if ($effecttarget eq "emptylane"){
@@ -1082,7 +1344,7 @@ sub applyeffects {
 				my $objectstring = "$object:".to_json($gamedata->{objects}{$object});
 				$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$effectcontroller:$targetlane:$object", $objectstring ));
 			}
-			kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object});
+			kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$object}, {Forged => 0});
 		}
 	}
 	if (lc($effecttype) eq "damage"){
@@ -1101,8 +1363,10 @@ sub applyeffects {
 			}
 		}
 		if ($effecttarget eq "self" or $effecttarget eq "target$targetindex"){
-			
+			if ($targets->[$targetindex] eq "opp" or $targets->[$targetindex] eq "self"){
+			}else {
 			applydamage($targets->[$targetindex], $effectmod1, 2);
+			}
 		}
 		if ($effecttarget eq "opponent" or ( $effecttarget eq "target$targetindex" and $targets->[$targetindex] eq "opp"  )  ){
 			
@@ -1116,7 +1380,7 @@ sub applyeffects {
     
 		
 	}
-	if ($effecttype eq "AddTrigger"){
+	if ($effecttype =~/AddTrigger/i){
 		
 		if ( defined $gamedata->{objects}{$targets->[$targetindex]}{newtriggers} ){
 			push(@{$gamedata->{objects}{$targets->[$targetindex]}{newtriggers}}, $effectmod1);
@@ -1184,6 +1448,27 @@ sub removeeffect2 {
 		debuglog("REMOVED KEYWORD $keyword by $amount\n\n");
 			
 	}
+	if ($data->{effecttype} =~ /AddTrigger/i){
+        
+        my $i=0;
+        while ($i < @{$gamedata->{objects}{$object}{triggers}}){
+            if ($gamedata->{objects}{$object}{triggers}[$i] == $data->{effectmod1}){
+                splice(@{$gamedata->{objects}{$object}{triggers}}, $i, 1);
+                last;
+            }
+        }
+	}
+	if ($data->{effecttype} eq "Attackplus" or $data->{effecttype} eq "statplus"){
+        $gamedata->{objects}{$object}{Attack} -= $data->{effectmod1};
+        	my $objectstring = "$object:".to_json($gamedata->{objects}{ $object });
+		$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `object`) VALUES(?, ? )", undef, (0,  $objectstring ));	
+	}
+	if ($data->{effecttype} eq "Healthplus" or $data->{effecttype} eq "statplus"){
+        $gamedata->{objects}{$object}{Health} -= $data->{effectmod1};
+        $gamedata->{objects}{$object}{maxhealth} -= $data->{effectmod1};
+        	my $objectstring = "$object:".to_json($gamedata->{objects}{ $object });
+		$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `object`) VALUES(?, ? )", undef, (0,  $objectstring ));	
+	}
 	if ($data->{effecttype} eq "stats"){
 		my $stats  = $data->{effectmod1};
 		my @stats = split("/", $stats);
@@ -1225,6 +1510,14 @@ sub applydamage {
 	if ($damage <=0){
 		return 0;
 	}
+	if (my $amount= checkkeyword("Armor", $object)> 0){
+        $damage-=$amount;
+        if ($damage<=0){
+            return;
+        }
+	}
+	kfgameshared::checktriggers("Damagereceived", $object, {Damage=> $damage });
+	
 	$gamedata->{objects}{$object}{Health}-= $damage;
 	my $objectstring = "$object:".to_json($gamedata->{objects}{ $object });
         $dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `object`) VALUES(?, ? )", undef, (0, $objectstring ));
@@ -1374,7 +1667,7 @@ sub triggercompare {
 		
 		return 1;
 	}
-#  	debuglog("$self, $target, $equation1, $equationcomp, $equation2");
+  	debuglog("$self, $target, $equation1, $equationcomp, $equation2");
 	my @results = split(/\./, $equation1);
 	if ($results[0] eq "self"){
 		if ($results[1] eq "opposed"){
@@ -1389,20 +1682,50 @@ sub triggercompare {
 				$var1=0;
 			}
 			
-		}
-		if ($results[1] eq "controller"){
-			debuglog("controller stat check $self->{owner} - @results");
-			debuglog("$gamedata->{players}{$self->{owner} }{$results[2]}");
+		}elsif ($results[1] eq "controller"){
+			
 			$var1=$gamedata->{players}{$self->{owner} }{$results[2] };
-		}elsif ($results[1] eq "lanesfilled"){
-			my $total;
+		}elsif ($results[1] eq "lowestenemy"){
+            my $lowest = 9999;
+            my $opp = 1;
+            if ($self->{owner} == 1){
+                $opp = 2;
+            }
+            for my $lane (1..5){
+                if ($gamedata->{lane}{$opp}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{$opp}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{$opp}{$lane} }{$results[2]};
+                    }
+                }
+            }
+            $var2 = $lowest;
+        
+        }elsif ($results[1] eq "lowestinplay"){
+            my $lowest = 9999;
+            for my $lane (1..5){
+                if ($gamedata->{lane}{1}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]};
+                    }
+                }
+                if ($gamedata->{lane}{2}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]};
+                    }
+                }
+                
+            }
+            $var2 = $lowest;
+        
+        }elsif ($results[1] eq "lanesfilled"){
+			my $total=0;
 			for my $lane (1..5) {
 				if ($gamedata->{lane}{ $self->{owner} }{$lane} > 0){
 					$total += 1;
 				}
 			}
 			$var1=$total;
-			
+			debuglog("checking lanesfilled, value = $total");
 		}elsif ($results[1] eq "factioninhand"){
 			my $number=0;
 			foreach my $card ( @{$gamedata->{players}{$self->{owner}}{hand}}){
@@ -1423,7 +1746,14 @@ sub triggercompare {
 		}
 	}
 	#if ($equation1=~/^target.(.*?)$/){
-	
+	if ($results[0] eq "secondobject"){
+        if (!defined $gamedata->{objects}{$secondobject}{$results[1]}){
+            debuglog("Error, not defined in target! ". $results[1]);
+            
+            return 0;
+        }
+        $var1=$gamedata->{objects}{$secondobject}{$results[1]};
+	}
 	if ($results[0] eq "target"){
 		if (!$target){
 			debuglog("target is undefined");
@@ -1445,7 +1775,24 @@ sub triggercompare {
 			$var1=$gamedata->{players}{ $target->{owner} }{$results[2] };
 		}elsif ($results[1] eq "keyword"){
 			$var1 = checkkeyword($results[2], $target->{id});
-		}else {
+		}elsif ($results[1] eq "lowestinplay"){
+            my $lowest = 9999;
+            for my $lane (1..5){
+                if ($gamedata->{lane}{1}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]};
+                    }
+                }
+                if ($gamedata->{lane}{2}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]};
+                    }
+                }
+                
+            }
+            $var1 = $lowest;
+        
+        }else {
 			if (!defined $target->{$results[1]}){
 				debuglog("Error, not defined in target! ". $results[1]);
 				
@@ -1453,19 +1800,42 @@ sub triggercompare {
 			}
 			$var1=$target->{$results[1]};
 		}
+		
 	}
+	if ($results[0] eq "random"){
+        $var1 = rand($results[1]);
+	}
+	
 	if ($results[0] eq "variable"){
         debuglog("checking variable $results[1] :".Data::Dumper::Dumper($variables));
-        if (!defined $variables) {
-			$var1=0;
+        if ($results[1] eq "distance" and !(defined $variables->{distance})){
+                debuglog("we're requesting a distance value!");
+                if (!defined $self->{lane} or !defined($target->{lane}) ) {
+                    $var1=0;
+                }else{
+                    $var1 = abs($self->{lane} - $target->{lane});
+                }
+                
         }else {
-			$var1=$variables->{$results[1]};
-			
+            if (!defined $variables) {
+                $var1=0;
+            }else {
+                $var1=$variables->{$results[1]};
+			}
 		}
 	}
 	
 	if ($results[0] eq "core"){
-		$var1=$gamedata->{$results[1]};
+        debuglog(@results);
+        if ($results[1] eq "count"){
+            debuglog("Checking count of target matches!");
+            my ($lane, $olane, $raw, $totalvalidtargets, $variables, $players) = findtargets_revised($gamedata->{turn}, $results[2], $self->{id});
+            debuglog("$totalvalidtargets");
+            $var1=$totalvalidtargets;
+        }else {
+            debuglog("Just a normal core value");
+            $var1=$gamedata->{$results[1]};
+		}
 	}
 	
 	@results = split(/\./, $equation2);
@@ -1489,7 +1859,24 @@ sub triggercompare {
 		}
 		if ($results[1] eq "controller"){
 			$var2=$gamedata->{players}{ $target->{owner} }{$results[2] };
-		}elsif ($results[1] eq "keyword"){
+		}elsif ($results[1] eq "lowestinplay"){
+            my $lowest = 9999;
+            for my $lane (1..5){
+                if ($gamedata->{lane}{1}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{1}{$lane} }{$results[2]};
+                    }
+                }
+                if ($gamedata->{lane}{2}{$lane} > 0 ){
+                    if ($gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]} < $lowest){
+                        $lowest = $gamedata->{objects}{ $gamedata->{lane}{2}{$lane} }{$results[2]};
+                    }
+                }
+                
+            }
+            $var2 = $lowest;
+        
+        }elsif ($results[1] eq "keyword"){
 			$var2 = checkkeyword($results[2], $target->{id});
 		}else {
 			if (!defined $target->{$results[1]}){
@@ -1534,6 +1921,13 @@ sub triggercompare {
 			return 0;
 		}
 	}
+	if ($equationcomp eq "ne"){
+		if ($var1 ne $var2 ) {
+			return 1;
+		}else {
+			return 0;
+		}
+	}
 	if ($equationcomp eq "con"){
 		if ($var1 =~/$var2/i ) {
 			
@@ -1543,7 +1937,15 @@ sub triggercompare {
 			return 0;
 		}
 	}
-	
+	if ($equationcomp eq "ncon"){
+		if ($var1 =~/$var2/i ) {
+			
+			return 0;
+		}else {
+			
+			return 1;
+		}
+	}
 	if ($equationcomp eq "<"){
 		if ($var1 < $var2 ) {
 			return 1;
@@ -1673,6 +2075,8 @@ sub createobject {
 		$card->{zone} = "play";
 	}
 	$card->{lane}=$lane;
+	$card->{battlesthisturn} = $card->{battlesperturn};
+	
 	$gamedata->{objectnumber}=$objectnumber;
 	$gamedata->{objects}{$objectnumber} = $card;
 	
@@ -1729,7 +2133,7 @@ sub checkcast {
 	my @canplay;
 	my $weare=$gamedata->{turn};
 	my $opp= 0;
-	
+	my $variables;
 	if ($weare == 1 ){
 		$opp = 2;
 	}else {
@@ -1772,7 +2176,7 @@ sub checkcast {
 				next;
 			}
 			my $totalvalidtargets=0;
-			($lane, $olane, $totalvalidtargets) = findtargets ($weare, $target, $card);
+			($lane, $olane, $totalvalidtargets, $variables) = findtargets ($weare, $target, $card);
 				
 			if ($totalvalidtargets == 0){	
 				next outer;
@@ -1825,6 +2229,8 @@ sub verifytargets {
 	my $targets = shift;
 	my $targetting = shift;
 	my $weare = shift;
+	my $sourceobject= shift;
+	
 	my $opp=1;
 	if ($weare == 1){
 		$opp=2;
@@ -1848,20 +2254,29 @@ sub verifytargets {
 		my $totalvalidtargets;
 		my $players;
 		my $endindex=$startindex;
-		my $variables;
+		my $variables2;
+		
+		if ($targetid eq "" || !defined $targetid || $targetid == 0){
+            next;
+		}
+		debuglog("target is: ".$targetid);
 		if ($alltargets->{$targetid}{mintargets}>1){
 			$endindex+=($alltargets->{$targetid}{mintargets}-1);
 		}
 		debuglog("Target is ".Data::Dumper::Dumper($targets));
-		 ($lane, $olane, $raw, $totalvalidtargets, $variables, $players) = findtargets_revised($gamedata->{turn}, $targetid, $targetting);
+		 ($lane, $olane, $raw, $totalvalidtargets, $variables2, $players) = findtargets_revised($gamedata->{turn}, $targetid, $targetting);
+		 foreach my $key (keys %{$variables2}){
+            $variables->{$key} = $variables2->{$key};
+		 }
 		debuglog("players is: ".Data::Dumper::Dumper($players));
 #  		debuglog(Data::Dumper::Dumper($targets), Data::Dumper::Dumper($lane));
 		
 		outer: for my $index ($startindex..$endindex ) {
+            
 			if (!$targets->[$index]){
 				next;
 			}
-			if ($alltargets->{$targetid}{Selector} eq "None"){
+			if ($alltargets->{$targetid}{Selector} eq "None" or $alltargets->{$targetid}{Selector} eq "All"){
 				next outer;
 			}
 			debuglog("Target is $targets->[$index]");
@@ -1903,13 +2318,16 @@ sub verifytargets {
 					}
 				}
 			}
+			
 			debuglog("Not a valid target! $targetid, $index, $targets->[$index]");
-			return 0;
+			return \@newtargets, \@alltargets, $variables, 1;
+			
 		}
 		
-	
-		if ($alltargets->{$targetid}{targettype} ne "lane"){
-			foreach my $a (@{$targets}){
+        for my $index ($startindex..$endindex ) {
+            if ($alltargets->{$targetid}{targettype} ne "lane"){
+			
+                $a= $targets->[$index];
 				next unless ($a);
 				my $b;
 				if ($a=~/ol(\d)/) {
@@ -1926,7 +2344,7 @@ sub verifytargets {
 					}
 				}
 				push @newtargets, $b;
-			}
+			
 	
 		
 			foreach my $target (@{$lane}){
@@ -1939,11 +2357,13 @@ sub verifytargets {
 				push(@alltargets, $target);
 			}
 		}else {
-			foreach my $a (@{$targets}){
-				next unless ($a);
-			
-				push @newtargets, $a;
-			}
+#             foreach my $a (@{$targets}){
+# 				next unless ($a);
+# 				push @newtargets, $a;
+# 			}
+            if ($targets->[$index]){
+                push @newtargets, $targets->[$index];
+            }
 			foreach my $target (@{$lane}){
 				push(@alltargets, "l$target");
 			}
@@ -1954,8 +2374,9 @@ sub verifytargets {
 				push(@alltargets, $target);
 			}
 		}
-		$startindex=$endindex+1;
-	}
+		}
+	$startindex=$endindex+1;
+	}	
 	debuglog("Everything seems valid, returning all possible targets".Data::Dumper::Dumper(\@newtargets, \@alltargets). Data::Dumper::Dumper($variables));
 	return \@newtargets, \@alltargets, $variables;
 	
@@ -1976,10 +2397,10 @@ sub findtargets_revised {
 #	debuglog(Data::Dumper::Dumper($players));
 	if ($alltargets->{$target}{targettype} eq "Creature"){
 		 
-		($lane, $olane, $totalvalidtargets) = findtargets ($weare, $target, $targetting);
+		($lane, $olane, $totalvalidtargets, $variables) = findtargets ($weare, $target, $targetting);
 					
 	}elsif ($alltargets->{$target}{targettype} eq "Creatureorplayer" ){
-		($lane, $olane, $totalvalidtargets) = findtargets ($weare, $target, $targetting);
+		($lane, $olane, $totalvalidtargets, $variables) = findtargets ($weare, $target, $targetting);
 		$players = [1, 2];
 		$totalvalidtargets+=2;
 		debuglog(Data::Dumper::Dumper($players));
@@ -1994,7 +2415,7 @@ sub findtargets_revised {
 		}elsif ($alltargets->{$target}{targettype} eq "cardinhand"){
 			
 			foreach my $card (@{$gamedata->{players}{$weare}{hand}} ){
-				if (checktarget($target, $card, $weare)){
+				if (checktarget($target, $card, $targetting, $weare)){
 					push (@{$raw}, $card);
 					$totalvalidtargets+=1;
 				}
@@ -2002,7 +2423,7 @@ sub findtargets_revised {
 		}
 		
 	#debuglog(Data::Dumper::Dumper($lane, $olane, $raw, $totalvalidtargets));
-	debuglog(Data::Dumper::Dumper($players));
+# 	debuglog(Data::Dumper::Dumper($players));
 	return $lane, $olane, $raw, $totalvalidtargets, $variables, $players;
 }
 sub findtargetlane {
@@ -2040,7 +2461,7 @@ sub findtargets {
 	my $weare = shift;
 	my $target = shift;
 	my $targetting = shift;
-	
+	my $variables={};
 	my $opp = 1;
 	if ($weare == 1) {
 		$opp=2;
@@ -2059,7 +2480,7 @@ sub findtargets {
                         #debuglog("Checking target $target for empty lanes");
                         if (checktargetlane($weare, $lane, $target, $targetting) ){
                             debuglog("This is a legal target!");
-                            push(@lane, $lane);
+                            push(@lane, "l$lane");
                             $totalvalidtargets += 1;
                         }
                     }
@@ -2070,7 +2491,10 @@ sub findtargets {
 				if ($emptylane){
                     next;
 				}
-				if (checktarget($target, $gamedata->{lane}{$weare}{$lane}, $targetting, $weare ) ){
+				if (my $tmp = checktarget($target, $gamedata->{lane}{$weare}{$lane}, $targetting, $weare ) ){
+                    foreach my $key (keys %{$tmp}){
+						$variables->{$key}=$tmp->{$key};
+					}
 					push (@lane, $lane);
 					$totalvalidtargets +=1;
 				}
@@ -2081,7 +2505,7 @@ sub findtargets {
                     if ($emptylane){
                         
                         if (checktargetlane($opp, $lane, $target, $targetting) ){
-                            push(@lane, $lane);
+                            push(@olane, "ol$lane");
                             $totalvalidtargets += 1;
                         }
                     }
@@ -2090,12 +2514,15 @@ sub findtargets {
 				if ($emptylane){
                     next;
 				}
-				if (checktarget($target , $gamedata->{lane}{$opp}{$lane}, $targetting, $weare ) ){
+				if (my $tmp=checktarget($target , $gamedata->{lane}{$opp}{$lane}, $targetting, $weare ) ){
+                    foreach my $key (keys %{$tmp}){
+						$variables->{$key}=$tmp->{$key};
+					}
 					push (@olane, $lane);
 					$totalvalidtargets +=1;
 				}
 			}
-	 return \@lane, \@olane, $totalvalidtargets;
+	 return \@lane, \@olane, $totalvalidtargets, $variables;
 }
 
 
@@ -2126,7 +2553,7 @@ sub checktargetlane  {
     $variables->{friendly} = 0;
     $variables->{distance} = 0;
     my $object={};
-    if ($weare == $gamedata->{turn}){
+    if ($weare == $gamedata->{objects}{$targetting}{owner}){
         $variables->{friendly} = 1;
     }
     
@@ -2179,7 +2606,7 @@ sub checktarget {
 	my %variables;
 	
 	if (!$target) {
-		return 1;
+		return \%variables;
 	}
 # 	debuglog(caller);
 	if (!triggercompare( $gamedata->{objects}{$targetting}, $gamedata->{objects}{$object},$alltargets->{$target}{target1var}, $alltargets->{$target}{target1compare},$alltargets->{$target}{target1target})){
@@ -2197,7 +2624,50 @@ sub checktarget {
 		my $var1;
 		if ($results[0] eq "self"){
 			if ($results[1] eq "controller"){
+				$var1=$gamedata->{players}{ $gamedata->{objects}{$targetting}{owner} }{$results[2] };
+			}elsif ($results[1] eq "cardsinhand"){
+				my $number=0;
+				foreach my $card ( @{$gamedata->{players}{$gamedata->{objects}{$targetting}{owner}}{hand}}){
+						$number ++;
+				}
+				$var1=$number;
+			}elsif ($results[1] eq "lanesfilled"){
+                my $total=0;
+                for my $lane (1..5) {
+                    if ($gamedata->{lane}{ $gamedata->{objects}{$targetting}{owner} }{$lane} > 0){
+                        $total += 1;
+                    }
+                }
+                $var1=$total;
+                debuglog("checking lanesfilled, value = $total");
+            }elsif ($results[1] eq "factioninhand"){
+				my $number=0;
+				foreach my $card ( @{$gamedata->{players}{$gamedata->{objects}{$targetting}{owner}}{hand}}){
+					if ($gamedata->{objects}{$card}{Faction} eq $results[2]){
+						$number ++;
+					}
+				}
+				$var1=$number;
+			}elsif ($results[1] eq "keyword"){
+				$var1=checkkeyword($results[2], $targetting)
+			}else {
+				if (!defined $gamedata->{objects}{$targetting}{$results[1]}){
+					debuglog("Error, not defined in self! ".Data::Dumper::Dumper($gamedata->{objects}{$object} ));
+				
+					return 0;
+				}
+				$var1=$gamedata->{objects}{$targetting}{$results[1]};
+			}
+		}
+	if ($results[0] eq "target"){
+			if ($results[1] eq "controller"){
 				$var1=$gamedata->{players}{ $gamedata->{objects}{$object}{owner} }{$results[2] };
+			}elsif ($results[1] eq "cardsinhand"){
+				my $number=0;
+				foreach my $card ( @{$gamedata->{players}{$gamedata->{objects}{$object}{owner}}{hand}}){
+						$number ++;
+				}
+				$var1=$number;
 			}elsif ($results[1] eq "factioninhand"){
 				my $number=0;
 				foreach my $card ( @{$gamedata->{players}{$gamedata->{objects}{$object}{owner}}{hand}}){
@@ -2210,14 +2680,13 @@ sub checktarget {
 				$var1=checkkeyword($results[2], $object)
 			}else {
 				if (!defined $gamedata->{objects}{$object}{$results[1]}){
-					debuglog("Error, not defined in self! ".Data::Dumper::Dumper($gamedata->{objects}{$object} ));
+					debuglog("Error, not defined in target! ".Data::Dumper::Dumper($gamedata->{objects}{$object} ));
 				
 					return 0;
 				}
 				$var1=$gamedata->{objects}{$object}{$results[1]};
 			}
 		}
-	
 		if ($results[0] eq "core"){
 			$var1=$gamedata->{$results[1]};
 		}
@@ -2267,12 +2736,14 @@ sub checkplays {
                             $ability = 3
                         }
                         if ($warp >= 4){
-                            $ability = 4                        }
+                            $ability = 4                        
+                        }
                 }
                 if ( $ability  ){
                     debuglog("We found an activated ability to try to activate: $ability - $index");
                     debuglog("$allactivated->{ $ability }{targetindex}");
-                    if ($gamedata->{objects}{$card}{ss}>0 ){
+                    if ($gamedata->{objects}{$card}{ss}>0 and checkkeyword("Aggressive", $card) <=0 ){
+                        debuglog("We're SS");
                         next outer;
                     }
                     if (defined $gamedata->{objects}{$card}{activatedthisturn}{$index} ){
@@ -2347,6 +2818,10 @@ sub checkplays {
             my $players;
             my $variables;
             my $totalvalidtargets;
+            if (!$gamedata->{objects}{$card}{targets}){
+                next outer;
+                
+            }
             foreach my $target (split (",",$gamedata->{objects}{$card}{targets} )){
                 if (!$target){
                     next;
@@ -2359,7 +2834,19 @@ sub checkplays {
 					debuglog("Not enough targets! ".$totalvalidtargets);
 					next outer;
 				}
-				push @{$targets},  {
+				if ($alltargets->{$target}{Selector} eq "All"){
+                    push @{$targets},  {
+						'text' => $alltargets->{$target}{text},
+						'raw' => [],
+						l => [],
+						o => [],
+						players => [],
+						mintargets => 0,
+						maxtargets => 0
+						};
+				
+				}else {
+                    push @{$targets},  {
 						'text' => $alltargets->{$target}{text},
 						'raw' => $raw,
 						l => $lane,
@@ -2369,7 +2856,7 @@ sub checkplays {
 						maxtargets => $alltargets->{$target}{maxtargets}
 						};
 				
-                
+                    }
                 }
             debuglog("We found ".Data::Dumper::Dumper($targets)." Targets");
             $card2="$card:".to_json($targets);
@@ -2430,6 +2917,10 @@ sub checkcanbattle {
 	if (checkkeyword("Defender", $id) > 0){
 		return 0;
 	}
+	
+	if ($gamedata->{turnphase} >= $gamedata->{objects}{$id}{battlesthisturn}){
+        return 0;
+	}
 	return 1;
 }
 
@@ -2488,8 +2979,8 @@ sub end {
 
 sub logmessage {
 	my $message = shift;
-	debuglog("turn is: $gamedata->{turn}");
-	
+# 	debuglog("turn is: $gamedata->{turn}");
+	$message = substr($message, 0, 250);
 	$dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `logmessage`, `turn`) VALUES(0, ?, ?)", undef, ($message, $gamedata->{turn}) );
 
 }

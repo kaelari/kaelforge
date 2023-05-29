@@ -1,0 +1,83 @@
+self.       anything about the card valid options are:
+        subtype
+        rarity
+        Text
+        ss     (Summoning sick)
+        CardType
+        zone
+        Health
+        Faction 
+        maxhealth
+        Attack
+        Name
+        owner
+        lane
+        level
+        lanesfilled    Number of lanes we have filled
+        opposed         1 there is a creature opposing us, 0 there is not
+        
+        
+self.keyword.    the keyword specified. <= 0 for not having it, >=1 for having
+            i.e. self.keyword.Aggressive
+
+self.controller.    The player who controls this object. note this requires a subfield, if you just want the controller 
+                    use owner
+                    Valid Fields:
+                life
+                level
+                levelprogress    (0-3 how far we are toward next level)
+
+self.factioninhand.   Number of cards of faction in hand
+                    Valid options
+                Nekrium
+                Uterra
+                Tempys
+                Alloyin
+
+Target   all options same as self 
+
+Core.       first level data from the game
+            Valid options:
+        turn    (who's turn it is either 1 or 2) 
+        
+variable.   Varibles that are set specific to the trigger/effect/target
+        Forged   (only on creaturetrained, 1 is played from hand)
+        Distance  (only on lane targets, Distance from us)
+        Friendly    (only on lane targets, 1 is friendly lane)
+        Empty       (only on lane targets, 1 is empty lane) 
+        
+
+        
+Value.   Raw value, such as value.3 or value.robot 
+
+Valid Comparisons:
+=
+==
+<=
+>=
+!=
+eq     (string equal)
+con     (string contains, use for subtype comparisons) for example, to check if a creature is a robot: 
+            self.subtype con value.robot
+        this will match, "robot" "robot guardian" "zombie robot" etc 
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+        
+
+        
+
+                
+                    
+            

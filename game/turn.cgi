@@ -3,6 +3,8 @@ use lib qw(. /usr/lib/cgi-bin/game);
 use CGI qw(param);
 use List::Util 'shuffle';
 use JSON;
+use strict;
+
 my $response = {};
 $kfgameshared::dbh=kfdb::connectdb();
 kfgameshared::init();
@@ -22,14 +24,12 @@ if ($kfgameshared::gamedata->{forceplay}){
     $response->{message} = "Must do forced play first";
     kfgameshared::end($response);
 }
-
+my $weare = 1;
+my $opp = 2;
 if ($kfgameshared::gamedata->{players}{1}{playerid} != $kfgameshared::player->{userId}){
     #we are 2
     $weare=2;
     $opp=1;
-}else {
-    $weare=1;
-    $opp=2;
 }
 
 if ($kfgameshared::gamedata->{turn} != $weare ){
@@ -38,7 +38,20 @@ if ($kfgameshared::gamedata->{turn} != $weare ){
     $response->{message} = "Not our turn";
     kfgameshared::end($response);
 }
-if ($kfgameshared::gamedata->{turnphase} == 0){
+my $battlesthisturn=1;
+foreach my $lane (1..5){
+    if ($kfgameshared::gamedata->{lane}{$weare}{$lane}){
+        
+        kfgameshared::debuglog("battles this turn, checking lane which has an object");
+        
+        if ($kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{$weare}{$lane} }{battlesthisturn}> $battlesthisturn){
+        
+            $battlesthisturn=$kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{$weare}{$lane} }{battlesthisturn};
+        }
+    }
+}
+
+if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
     #time to B-B-Battle
     kfgameshared::checktriggers("Attack");
     our $lanestring="";
@@ -82,7 +95,12 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
 				$damage -= kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{2}{$lane});
 			}
             if ($damage >0 ){
+            
                 $kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{2}{$lane} }{"Health"}-=$damage;
+                kfgameshared::checktriggers("Damagedealt", $kfgameshared::gamedata->{lane}{1}{$lane}, {Damage=> $damage }, $kfgameshared::gamedata->{lane}{2}{$lane});
+                kfgameshared::checktriggers("Damagereceived", $kfgameshared::gamedata->{lane}{2}{$lane}, {Damage=> $damage }, $kfgameshared::gamedata->{lane}{1}{$lane});
+                
+                
                 if (kfgameshared::checkkeyword("Drain", $kfgameshared::gamedata->{lane}{1}{$lane} )) {
 					$kfgameshared::gamedata->{players}{1}{life} += $damage;
 				}
@@ -99,7 +117,10 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
 				$damage -= kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{1}{$lane});
 			}
             if ($damage >0 ){
+                
                 $kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{1}{$lane} }{"Health"}-=$damage;
+                kfgameshared::checktriggers("Damagedealt", $kfgameshared::gamedata->{lane}{2}{$lane}, {Damage=> $damage },$kfgameshared::gamedata->{lane}{1}{$lane} );
+                kfgameshared::checktriggers("Damagereceived", $kfgameshared::gamedata->{lane}{1}{$lane}, {Damage=> $damage }, $kfgameshared::gamedata->{lane}{2}{$lane});
                 if (kfgameshared::checkkeyword("Drain", $kfgameshared::gamedata->{lane}{2}{$lane})) {
 					$kfgameshared::gamedata->{players}{2}{life} += $damage;
 				}
@@ -125,7 +146,7 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, life) VALUES(?, ? )", undef, (0, $healthstring ) );
     kfgameshared::logmessage("Combat Over");
     kfgameshared::checkendgame();
-    $kfgameshared::gamedata->{turnphase} = 1;
+    $kfgameshared::gamedata->{turnphase} += 1;
     kfgameshared::checkstatebased($game);
     kfgameshared::checkplays();
 }else {
@@ -179,11 +200,13 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
 						
 					}
 				}
+				@{$kfgameshared::gamedata->{objects}{$object}{expires}} = grep defined, @{$kfgameshared::gamedata->{objects}{$object}{expires}};
 			}
 			my $changed=0;
 			if ((my $decay= kfgameshared::checkkeyword("Poison", $object) )> 0 ){
 				$kfgameshared::gamedata->{objects}{$object}{Health}-= $decay;
 				$changed=1;
+				 kfgameshared::checktriggers("Damagereceived", $object, {Damage=> $decay });
 			}
 			if ((my $repair= kfgameshared::checkkeyword("Regenerate", $object) )> 0 ){
 				$kfgameshared::gamedata->{objects}{$object}{Health}+= $repair;
@@ -196,6 +219,7 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
 				$kfgameshared::gamedata->{objects}{$object}{ss}=0;
 				$changed=1;
 			}
+			$kfgameshared::gamedata->{objects}{$object}{battlesthisturn} = $kfgameshared::gamedata->{objects}{$object}{battlesperturn};
 			if ($changed){
 				my $objectstring = "$object:".to_json($kfgameshared::gamedata->{objects}{$object });
 				$kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `object`) VALUES(?, ? )", undef, (0, $objectstring ));
@@ -230,6 +254,7 @@ if ($kfgameshared::gamedata->{turnphase} == 0){
 				}
 				$changed=1;
 			}
+			$kfgameshared::gamedata->{objects}{$object}{battlesthisturn} = $kfgameshared::gamedata->{objects}{$object}{battlesperturn};
 			if ($changed){
 				my $objectstring = "$object:".to_json($kfgameshared::gamedata->{objects}{$object });
 				$kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `object`) VALUES(?, ? )", undef, (0, $objectstring ));
