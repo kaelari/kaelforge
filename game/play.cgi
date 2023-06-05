@@ -56,6 +56,7 @@ if ($kfgameshared::gamedata->{forceplay}){
 # Initialize variables to keep track of the current player and the opponent
 our $weare=0;
 our $opp = 0;
+my $nolevel = 0;
 
 # If it's not the current player's turn, set an error message and end the script
 if ($kfgameshared::gamedata->{players}{$kfgameshared::gamedata->{turn}}{playerid} != $kfgameshared::player->{userId}){
@@ -266,6 +267,7 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
         }
         kfgameshared::debuglog("finished activating $ability $abilityindex of $card");
 		$kfgameshared::gamedata->{objects}{$card}{activatedthisturn}{$abilityindex}=1;
+		$nolevel=1;
 }elsif($kfgameshared::gamedata->{objects}{$card}{CardType} eq "Creature"){
     my $lane=param("target");
     my $target = from_json($lane);
@@ -334,7 +336,7 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
     
     
 }
-if ($kfgameshared::gamedata->{objects}{$card}{levelsto}>0 and !kfgameshared::checkkeyword("Overload", $card)  ) {
+if ($kfgameshared::gamedata->{objects}{$card}{levelsto}>0 and !kfgameshared::checkkeyword("Overload", $card) and !$nolevel ) {
     #need to add the leveled version to the discard
     my $card= kfgameshared::createobject($kfgameshared::gamedata->{objects}{$card}{levelsto}, $weare);
     $kfgameshared::gamedata->{objects}{$card}{zone}="discard";

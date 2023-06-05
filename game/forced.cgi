@@ -102,13 +102,14 @@ foreach my $effect (@effects){
         });
     }
 }
-
+kfgameshared::debuglog(Data::Dumper::Dumper($kfgameshared::gamedata->{forceplay}));
 shift(@{$kfgameshared::gamedata->{forceplay}});
 if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
 	kfgameshared::checkplays();
     delete ($kfgameshared::gamedata->{forceplay});
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `forcedaction`) VALUES(?, ? )", undef, (0,  0));
 }else {
+    kfgameshared::debuglog("another forced play");
     my $string = to_json($kfgameshared::gamedata->{forceplay}[0]);
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `forcedaction`) VALUES(?, ? )", undef, (0,  $string));
 		

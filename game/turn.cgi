@@ -70,8 +70,9 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
 				if (kfgameshared::checkkeyword("Drain", $kfgameshared::gamedata->{lane}{1}{$lane}) ) {
 						$kfgameshared::gamedata->{players}{1}{life} += $damage;
 				}
+				kfgameshared::checktriggers("Playerdamage", $kfgameshared::gamedata->{lane}{1}{$lane}, {Damage=> $damage});
+            
             }
-            kfgameshared::checktriggers("Playerdamage", $kfgameshared::gamedata->{lane}{1}{$lane}, {Damage=> $damage});
             
             kfgameshared::logmessage("$kfgameshared::gamedata->{players}{2}{name} takes $damage damage");
         }
@@ -83,16 +84,24 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
 				if (kfgameshared::checkkeyword("Drain", $kfgameshared::gamedata->{lane}{2}{$lane} ) ) {
 						$kfgameshared::gamedata->{players}{2}{life} += $damage;
 				}
+				kfgameshared::checktriggers("Playerdamage", $kfgameshared::gamedata->{lane}{2}{$lane}, {Damage=> $damage});
+            
             }
-            kfgameshared::checktriggers("Playerdamage", $kfgameshared::gamedata->{lane}{2}{$lane}, {Damage=> $damage});
             
             kfgameshared::logmessage("$kfgameshared::gamedata->{players}{1}{name} takes $damage damage");
         }
         if ($kfgameshared::gamedata->{lane}{1}{$lane} >=1 and $kfgameshared::gamedata->{lane}{2}{$lane} >= 1) {
             #player1's creature first (but actually at the same time)
             $damage = $kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{1}{$lane} }{"Attack"};
-			if (kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{2}{$lane}) >0 ){
-				$damage -= kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{2}{$lane});
+			if (my $armor = kfgameshared::checkarmor($kfgameshared::gamedata->{lane}{2}{$lane})){
+                if ($armor > $damage){
+                    $kfgameshared::gamedata->{objects}{$kfgameshared::gamedata->{lane}{2}{$lane} }{armorthisturn} += $damage;
+                    $damage=0;
+                }else {
+                    $damage -= $armor;
+                    $kfgameshared::gamedata->{objects}{$kfgameshared::gamedata->{lane}{2}{$lane} }{armorthisturn} += $armor;
+                }
+				
 			}
             if ($damage >0 ){
             
@@ -113,9 +122,16 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
             
             #player2's creature hits back at the same time
             $damage = $kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{2}{$lane} }{"Attack"};
-            if (kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{1}{$lane}) >0 ){
-				$damage -= kfgameshared::checkkeyword("Armor", $kfgameshared::gamedata->{lane}{1}{$lane});
-			}
+            if (my $armor = kfgameshared::checkarmor($kfgameshared::gamedata->{lane}{1}{$lane}) ){
+                    if ($armor > $damage){
+                        $kfgameshared::gamedata->{objects}{$kfgameshared::gamedata->{lane}{1}{$lane} }{armorthisturn} += $damage;
+                        $damage=0;
+                    }else {
+                        $damage -= $armor;
+                        $kfgameshared::gamedata->{objects}{$kfgameshared::gamedata->{lane}{1}{$lane} }{armorthisturn} += $armor;
+                    }
+				
+                }
             if ($damage >0 ){
                 
                 $kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{1}{$lane} }{"Health"}-=$damage;
@@ -183,12 +199,14 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
     foreach my $a (1..5) {
 		if (my $object=$kfgameshared::gamedata->{lane}{ $kfgameshared::gamedata->{turn} }{$a}) {
 			next unless $object;
+			$kfgameshared::gamedata->{objects}{$object}{armorthisturn} = 0;
+			
 			$kfgameshared::gamedata->{objects}{$object}{activatedthisturn}={};
 			if (defined $kfgameshared::gamedata->{objects}{$object}{expires}){
 				kfgameshared::debuglog("expires is defined");
 				kfgameshared::debuglog(Data::Dumper::Dumper($kfgameshared::gamedata->{objects}{$object}{expires}));
 				foreach my $expires (@{$kfgameshared::gamedata->{objects}{$object}{expires}}){
-					if ($expires == undef){
+					if (! defined $expires){
 						next;
 					}
 					$expires->{turns}-=1;
@@ -202,11 +220,21 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
 				}
 				@{$kfgameshared::gamedata->{objects}{$object}{expires}} = grep defined, @{$kfgameshared::gamedata->{objects}{$object}{expires}};
 			}
+			
 			my $changed=0;
-			if ((my $decay= kfgameshared::checkkeyword("Poison", $object) )> 0 ){
+			if ( (my $decay= kfgameshared::checkkeyword("Poison", $object) )> 0 ){
+                my $armor =kfgameshared::checkarmor($object);
+                if ($decay > $armor){
+                    $decay-= $armor;
+                    $kfgameshared::gamedata->{objects}{$object}{armorthisturn} += $armor;
+                }else {
+                    $kfgameshared::gamedata->{objects}{$object}{armorthisturn} += $decay;
+                    $decay =0;
+                    
+                }
 				$kfgameshared::gamedata->{objects}{$object}{Health}-= $decay;
 				$changed=1;
-				 kfgameshared::checktriggers("Damagereceived", $object, {Damage=> $decay });
+                kfgameshared::checktriggers("Damagereceived", $object, {Damage=> $decay });
 			}
 			if ((my $repair= kfgameshared::checkkeyword("Regenerate", $object) )> 0 ){
 				$kfgameshared::gamedata->{objects}{$object}{Health}+= $repair;
@@ -226,12 +254,13 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
             }
 		}
 		if (my $object=$kfgameshared::gamedata->{lane}{ (($kfgameshared::gamedata->{turn} % 2) +1) }{$a}) {
+			$kfgameshared::gamedata->{objects}{$object}{armorthisturn} = 0;
 			my $changed=0;
 			if (defined $kfgameshared::gamedata->{objects}{$object}{expires}){
 				kfgameshared::debuglog("expires is defined");
 				kfgameshared::debuglog(Data::Dumper::Dumper($kfgameshared::gamedata->{objects}{$object}{expires}));
 				foreach my $expires (@{$kfgameshared::gamedata->{objects}{$object}{expires}}){
-					if ($expires == undef ){
+					if (! defined $expires ){
 						next;
 					}
 					$expires->{turns}-=1;

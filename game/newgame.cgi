@@ -12,8 +12,11 @@ my $deck2=(param("deck2") or "");
 my $gameid=(param("gameid") or "");
 my $name1=(param("player1name") or "");
 my $name2=(param("player2name") or "");
+my $avatar1=(param("avatar1") or 0);
+my $avatar2=(param("avatar2") or 0);
+
 if ($player1 and $player2 and $deck1 and $deck2 and $gameid){	
-	startgame($gameid, $player1, $player2, $deck1, $deck2, $name1, $name2);
+	startgame($gameid, $player1, $player2, $deck1, $deck2, $name1, $name2, $avatar1, $avatar2);
 }else {
 	kfgameshared::debuglog("Error! missing data to make game: $player1 and $player2 and $deck1 and $deck2 and $gameid");
 }
@@ -26,6 +29,8 @@ sub startgame {
 	my $deck2 = shift;
 	my $name1= shift;
 	my $name2=shift;
+	my $avatar1=shift;
+	my $avatar2=shift;
  	$kfgameshared::game = $gameid;
 	$kfgameshared::dbh->do("CREATE TABLE `KF_game`.`GameMessages_$gameid` (
    `playerid` int(11) NOT NULL,
@@ -50,7 +55,10 @@ sub startgame {
   MODIFY `messageid` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;");
 	srand;
 	$kfgameshared::gamedata={};
-	$kfgameshared::gamedata->{turn}=int rand(2)+1;
+	$kfgameshared::gamedata->{turn} = 1;
+	if (rand(100)<50){
+        $kfgameshared::gamedata->{turn}=2;
+	}
 	$kfgameshared::gamedata->{turnphase}=0;
 	$kfgameshared::gamedata->{playsremaining}=1;
 	
@@ -82,6 +90,7 @@ sub startgame {
 			id => 1,
 			level => 1,
 			levelprogress=> 0,
+			avatar=> $avatar1,
 			};
 	
 	$kfgameshared::gamedata->{players}{2} = {
@@ -94,6 +103,7 @@ sub startgame {
 			id => 2,
 			level => 1,
 			levelprogress=> 0,
+			avatar=> $avatar2,
 			};
 	$kfgameshared::gamedata->{objectnumber} = 1;
 	my @deck1 = split(/, ?/, $deck1);
