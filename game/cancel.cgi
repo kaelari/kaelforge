@@ -44,72 +44,20 @@ if ($kfgameshared::gamedata->{turn} != $weare ){
     $response->{status} = "Failed";
     $response->{message} = "Not our turn $weare $kfgameshared::gamedata->{turn} ";
     kfgameshared::end($response);
+    exit;
 }
 my $trigger= param("trigger");
 my $target = param("target");
 my @targets;
 
-my $lane=param("target");
-kfgameshared::debuglog("we recieved: $lane");
-my $targets = from_json($lane);
-my @targets2;
-my $alltargets;
-my @a=split(/,/,$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindex});
-if ($kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targettype} eq "multi"){
-    @a=split(/,/,$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindexes});
-}
-my $newvariables;
-my $variables = $kfgameshared::gamedata->{forceplay}[0]{variables};
-	my $targets2;
-	kfgameshared::debuglog("Checking for target: $target");
-	
-	($targets2, $alltargets, $newvariables )= kfgameshared::verifytargets(\@a, $targets, $kfgameshared::gamedata->{forceplay}[0]{source}, $weare);
-	foreach my $key (keys %{$newvariables}){
-        $variables->{$key}=$newvariables->{$key};
-	}
-			if (!$targets2){
-				$response->{status} = "Failed";
-				$response->{message} = "invalid target";
-				kfgameshared::end($response);
-				exit;
-			}
-			@targets2= @{$targets2};
-			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(\@targets2));
-			kfgameshared::debuglog("alltargets is:" . Data::Dumper::Dumper($alltargets));
-	
 
-my @effects = split(/,/, $kfgameshared::alltriggers->{$trigger}{effectindexes});
-foreach my $effect (@effects){
-	if ($kfgameshared::alltargets->{$kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindex}}{Selector} eq "All"){
-		kfgameshared::debuglog("applying effect(All): $effect");
-        		foreach my $target (@{$alltargets}){
-					kfgameshared::debuglog("applying effect(All): $target");	
-					kfgameshared::applyeffects( {
-						effecttype=> $kfgameshared::alleffects->{$effect}{effecttype}, 
-						effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
-						effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1}, 
-						expires => $kfgameshared::alleffects->{$effect}{expires},
-						target => [$target], 
-						effectcontroller => $weare,
- 						variables => $variables,
- 						loop => $kfgameshared::alleffects->{$effect}{loop},
-						} );
-        		}
-	}else {
-
-        kfgameshared::applyeffects({
-            effecttype => $kfgameshared::alleffects->{$effect}{effecttype}, 
-            effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
-            effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1},
-            expires => $kfgameshared::alleffects->{$effect}{expires},
-            target =>  \@targets2, 
-            effectcontroller => $weare,
-            variables => $variables,
-            loop => $kfgameshared::alleffects->{$effect}{loop},
-        });
-    }
+if ($kfgameshared::gamedata->{forceplay}[0]{cancancel} == 0){
+    $response->{status} = "Failed";
+    $response->{message} = "Not a cancelable action ";
+    kfgameshared::end($response);
+    exit;
 }
-kfgameshared::debuglog(Data::Dumper::Dumper($kfgameshared::gamedata->{forceplay}), $game );
+
 shift(@{$kfgameshared::gamedata->{forceplay}});
 if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
 	delete ($kfgameshared::gamedata->{forceplay});
@@ -142,7 +90,7 @@ if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
                                 next outer;
                             }
                             my $targetinfo ={};
-                            $targetinfo->{text} = $alltargets->{$index}{text};
+                            $targetinfo->{text} = $kfgameshared::alltargets->{$index}{text};
                             $targetinfo->{l} = $lane;
                             $targetinfo->{o} = $olane;
                             push (@targetinfo, $targetinfo);
@@ -156,7 +104,6 @@ if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
             $targetinfo->{l} = $lane;
             $targetinfo->{o} = $olane;
             $targetinfo->{raw}= $raw;
-            $targetinfo->{players} = $players;
             push (@targetinfo, $targetinfo);
         
             if ($totalvalidtargets < $kfgameshared::alltargets->{ $kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{targetindex} }{mintargets} ){
@@ -169,7 +116,7 @@ if ( (scalar @{$kfgameshared::gamedata->{forceplay}}) == 0){
         }
         $kfgameshared::gamedata->{forceplay}[0]{targets} = \@targetinfo;
         $kfgameshared::gamedata->{forceplay}[0]{variables} = $variables;
-        
+        $kfgameshared::gamedata->{forceplay}[0]{cancancel} = $kfgameshared::alltriggers->{$kfgameshared::gamedata->{forceplay}[0]{trigger}}{cancancel};
 		my $string = to_json($kfgameshared::gamedata->{forceplay}[0]);
 		
 		my $weare = $kfgameshared::gamedata->{turn};

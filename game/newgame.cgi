@@ -39,7 +39,7 @@ sub startgame {
   `changezones` char(255) DEFAULT NULL,
   `changestate` char(255) DEFAULT NULL,
   `changeowner` char(255) DEFAULT NULL,
-  `forcedaction` char(255) DEFAULT NULL,
+  `forcedaction` text DEFAULT NULL,
   `turn` int(4) DEFAULT NULL,
   `levels` char(255) DEFAULT NULL,
   `draws` char(10) DEFAULT NULL,
@@ -125,6 +125,17 @@ sub startgame {
 	@deck2 = shuffle (@newdeck2);
 	$kfgameshared::gamedata->{deck1}=\@deck1;
 	$kfgameshared::gamedata->{deck2}=\@deck2;
+	kfgameshared::shuffledeck(1);
+	kfgameshared::shuffledeck(2);
+	
+	foreach my $card (@deck1){
+        kfgameshared::checktriggers("StartGame", $card);
+    }
+	foreach my $card (@deck2){
+        kfgameshared::checktriggers("StartGame", $card);
+    }
+	
+	
 	kfgameshared::drawcard(1, 5);
 	kfgameshared::drawcard(2, 5);
 	kfgameshared::checkplays();

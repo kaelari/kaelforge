@@ -2,7 +2,7 @@
 use strict "vars";
 use lib qw(. /usr/lib/cgi-bin/kfplatform);
 
-use CGI param;
+use CGI qw(param);
 $kfplatformshared::dbh=kfdbplatform::connectdb();
 my $response = {};
 kfplatformshared::init();

@@ -9,6 +9,7 @@ kfplatformshared::init();
 
 my $eventid=param("eventid");
 my $deckid=param("deckid");
+my $queuetype=param("queuetype");
 my $eventdata;
 my $eventbasedata;
 
@@ -34,7 +35,7 @@ if ($eventid){
 	}
 	my $deckinfo= $kfplatformshared::dbh->selectrow_hashref("SELECT * from `Decks` WHERE `deckid` = ? AND `ownerid` = ?", undef , ($deckid, $kfplatformshared::player->{userId}));
 	if ($deckinfo->{formats}=~/standard/i){
-		$kfplatformshared::dbh->do("INSERT INTO `queue`(`playerid`,`queuekey`, `deckid`,`eventid`)VALUES(?,?,?,?)", undef, ( $kfplatformshared::player->{userId}, "constructed", $deckid, 0));
+		$kfplatformshared::dbh->do("INSERT INTO `queue`(`playerid`,`queuekey`, `deckid`,`eventid`)VALUES(?,?,?,?)", undef, ( $kfplatformshared::player->{userId}, $queuetype, $deckid, 0));
 	}else {
 		$response->{status}="failed";
 		$response->{reason}="Deck Not Legal";

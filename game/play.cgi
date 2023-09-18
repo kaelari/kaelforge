@@ -4,7 +4,7 @@ use strict;
 
 # Import the database handle and connect to the database
 $kfgameshared::dbh=kfdb::connectdb();
-
+use List::Util 'shuffle';
 # Import the CGI module and use its 'param' method to fetch the 'game' parameter
 use CGI qw(param);
 
@@ -110,13 +110,11 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
         my $alltargets;
         my $targets2;
         my $variables={};
-        kfgameshared::debuglog("targets".Data::Dumper::Dumper($targets));
-        kfgameshared::debuglog("weare: ".Data::Dumper::Dumper($weare));
+        
         my @a =split(/,/, $kfgameshared::gamedata->{objects}{$card}{targets});
-        kfgameshared::debuglog("a is ".Data::Dumper::Dumper(\@a));
+        
         my $failed=0;
        	($targets2, $alltargets, $variables, $failed )= kfgameshared::verifytargets(\@a, $targets, $card, $weare);
-		kfgameshared::debuglog(Data::Dumper::Dumper($variables));
 		
 		if ($failed ){
 				$response->{status} = "Failed";
@@ -125,17 +123,54 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 				exit;
 			}
 			@targets2= @{$targets2};
-			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(@targets2));
-			kfgameshared::debuglog("alltargets is:" . Data::Dumper::Dumper($alltargets));
 			
 			
 		
         my @effects = split(/,/, $kfgameshared::gamedata->{objects}{$card}{effects});
         foreach my $effect (@effects){
-            if ($kfgameshared::alltargets->{$kfgameshared::gamedata->{objects}{$card}{targets}}{Selector} eq "All"){
-        		kfgameshared::debuglog("applying effect(All): $effect");
+            kfgameshared::debuglog("effect is $effect", $game);
+            my $targetinfo;
+            if ($effect =~/^(\d+)\+(\d+)$/){
+                    $effect = $1;
+                    my $targetnumber = $2;
+                    kfgameshared::debuglog("targetnumber: $2, $a[$targetnumber] effect: $effect", $game);
+                    ($targets2, $alltargets, $variables, $failed )= kfgameshared::verifytargets([$a[$targetnumber]], $targets, $card, $weare);
+                    if ($kfgameshared::alltargets->{ $a[$targetnumber] }{Selector} eq "All"){
+                        $targetinfo = $alltargets;
+                        foreach my $target (@{$targetinfo}){
+                        kfgameshared::debuglog("Testing $target - $effect", $game );
+                        
+                            kfgameshared::applyeffects( {
+                                effecttype=> $kfgameshared::alleffects->{$effect}{effecttype}, 
+                                effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
+                                effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1}, 
+                                expires => $kfgameshared::alleffects->{$effect}{expires},
+                                target => [$target], 
+                                effectcontroller => $weare,
+                                variables => $variables,
+                                loop => $kfgameshared::alleffects->{$effect}{loop},
+                            } );
+                        }
+                    }
+                    if ($kfgameshared::alltargets->{$a[$targetnumber]}{Selector} eq "Random"){
+                        my @targetinfo = @{$alltargets};
+                        @targetinfo = shuffle(@targetinfo);
+                        $targetinfo = \@targetinfo;
+                        kfgameshared::applyeffects( {
+                                effecttype=> $kfgameshared::alleffects->{$effect}{effecttype}, 
+                                effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
+                                effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1}, 
+                                expires => $kfgameshared::alleffects->{$effect}{expires},
+                                target => $targetinfo, 
+                                effectcontroller => $weare,
+                                variables => $variables,
+                                loop => $kfgameshared::alleffects->{$effect}{loop},
+                            } );
+                    }
+                    
+            }elsif ($kfgameshared::alltargets->{$kfgameshared::gamedata->{objects}{$card}{targets}}{Selector} eq "All"){
+        		
         		foreach my $target (@{$alltargets}){
-					kfgameshared::debuglog("applying effect(All): $target");	
 					kfgameshared::applyeffects( {
 						effecttype=> $kfgameshared::alleffects->{$effect}{effecttype}, 
 						effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
@@ -144,10 +179,27 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 						target => [$target], 
 						effectcontroller => $weare,
  						variables => $variables,
+ 						loop => $kfgameshared::alleffects->{$effect}{loop},
 						} );
         		}
+        	}elsif ($kfgameshared::alltargets->{$kfgameshared::gamedata->{objects}{$card}{targets}}{Selector} eq "Random"){
+        		my @targets = @{$alltargets};
+        		@targets = shuffle(@targets);
+        		
+        			
+					kfgameshared::applyeffects( {
+						effecttype=> $kfgameshared::alleffects->{$effect}{effecttype}, 
+						effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
+						effectmod1 => $kfgameshared::alleffects->{$effect}{effectmod1}, 
+						expires => $kfgameshared::alleffects->{$effect}{expires},
+						target => \@targets, 
+						effectcontroller => $weare,
+ 						variables => $variables,
+ 						loop => $kfgameshared::alleffects->{$effect}{loop},
+						} );
+        		
         	}else {
-        		kfgameshared::debuglog("applying effect: $effect");
+        		
 				kfgameshared::applyeffects( {
 					effecttype => $kfgameshared::alleffects->{$effect}{effecttype}, 
 					effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
@@ -155,7 +207,8 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 					expires => $kfgameshared::alleffects->{$effect}{expires},
 					target => \@targets2,
 					effectcontroller => $weare, 
-					variables => $variables
+					variables => $variables,
+					loop => $kfgameshared::alleffects->{$effect}{loop},
 					} );
             }
         }
@@ -216,27 +269,24 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
         kfgameshared::end($response);
         exit;
     }
-    kfgameshared::debuglog(Data::Dumper::Dumper($targets));
+    
     my $variables={};
     my @a =split(/,/, $activated);
     my $targets2;
     my $failed=0;
     ($targets2, $alltargets, $variables, $failed) = kfgameshared::verifytargets(\@a, $targets, $card, $weare);
-			if ($failed){
-				$response->{status} = "Failed";
-				$response->{message} = "invalid target";
-				kfgameshared::end($response);
-				exit;
-			}
-			@targets2= @{$targets2};
-			push (@targets2, $card);
-			kfgameshared::debuglog("targets2 is:" . Data::Dumper::Dumper(@targets2));
-			kfgameshared::debuglog("alltargets is:" . Data::Dumper::Dumper($alltargets));
-	
-		
-	
-		kfgameshared::debuglog("applying effects!\n\n\n\n\n\n");
-        my @effects = split(/,/, $kfgameshared::allactivated->{ $ability }{effects});
+    if ($failed){
+        $response->{status} = "Failed";
+        $response->{message} = "invalid target";
+        kfgameshared::end($response);
+        exit;
+    }
+    @targets2= @{$targets2};
+    push (@targets2, $card);
+    
+    
+    
+    my @effects = split(/,/, $kfgameshared::allactivated->{ $ability }{effects});
         foreach my $effect (@effects){
 			$variables->{source} = $card;
             if ($kfgameshared::alltargets->{$a[0]}{Selector} eq "All"){
@@ -249,11 +299,13 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 						expires => $kfgameshared::alleffects->{$effect}{expires},
 						target => [$target, $card], 
 						effectcontroller => $weare,
-						variables => $variables
+						variables => $variables,
+						loop => $kfgameshared::alleffects->{$effect}{loop},
+						
 						} );
         		}
         	}else {
-        		kfgameshared::debuglog("applying effect: $effect");
+        		
 				kfgameshared::applyeffects({
 					effecttype => $kfgameshared::alleffects->{$effect}{effecttype}, 
 					effecttarget => $kfgameshared::alleffects->{$effect}{effecttarget},
@@ -262,10 +314,11 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
 					target => \@targets2,
 					effectcontroller => $weare,
 					variables => $variables,
+					loop => $kfgameshared::alleffects->{$effect}{loop},
 					} );
             }
         }
-        kfgameshared::debuglog("finished activating $ability $abilityindex of $card");
+        
 		$kfgameshared::gamedata->{objects}{$card}{activatedthisturn}{$abilityindex}=1;
 		$nolevel=1;
 }elsif($kfgameshared::gamedata->{objects}{$card}{CardType} eq "Creature"){
@@ -326,10 +379,8 @@ delete $kfgameshared::gamedata->{hidden}{$weare}{handplayable};
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `lane`, `object`) VALUES(?, ?, ? )", undef, (0, "$weare:$lane:$card", $objectstring ));
     
     kfgameshared::logmessage("$kfgameshared::player->{username} plays <link=$kfgameshared::gamedata->{objects}{$card}{CardId}><color=#000000>$kfgameshared::gamedata->{objects}{$card}{Name}(lvl $kfgameshared::gamedata->{objects}{$card}{level})</color></link>");
-    kfgameshared::debuglog("start checking triggers for Creaturetrained+ $card");
     kfgameshared::checktriggers("Creaturetrained", $kfgameshared::gamedata->{objects}{$card}, {Forged => 1} );
-    kfgameshared::debuglog("done checking triggers for Creaturetrained");
-
+    
     
     $kfgameshared::dbh->do("INSERT INTO `GameMessages_$game` (`playerid`, `draws`) VALUES(?, ?)", undef, ($kfgameshared::player->{userId}, -$card));
     

@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-use lib qw(. /usr/lib/cgi-bin/kfplatform);
+use lib qw(. /usr/lib/perl);
 use kfdbconnect;
 use Data::Dumper;
 use List::Util 'shuffle';
@@ -21,8 +21,8 @@ for (1..60){
 				if (canpair($entries->[$i], $entries->[$z])){
 					print "can pair!\n";
 					print Dumper($entries->[$i]);
-					$dbh->do("INSERT INTO `Games` (`player1`, `player2`, `deck1`, `deck2`, eventId1, eventId2) VALUES(?,?,?,?,?,?)", undef, ($entries->[$i]{playerid}, $entries->[$z]{playerid}, $entries->[$i]{deckid}, $entries->[$z]{deckid}, $entries->[$i]{eventid}, $entries->[$z]{eventid}));
-					my $game= $dbh->{'mysql_insertid'};
+					$dbh->do("INSERT INTO `Games` (`player1`, `player2`, `deck1`, `deck2`, `eventId1`, `eventId2`, `queuekey`) VALUES(?,?,?,?,?,?,?)", undef, ($entries->[$i]{playerid}, $entries->[$z]{playerid}, $entries->[$i]{deckid}, $entries->[$z]{deckid}, $entries->[$i]{eventid}, $entries->[$z]{eventid}, $entries->[$i]{queuekey}));
+					my $game= $dbh->last_insert_id();
 					$dbh->do("Delete from `queue` where `rowid` = ?", undef, ($entries->[$i]{rowid}));
 					$dbh->do("Delete from `queue` where `rowid` = ?", undef, ($entries->[$z]{rowid}));
 					if ($entries->[$i]{eventid}){
@@ -69,12 +69,13 @@ sub startgame {
 	my $deck2 =  loaddeck( $player2->{deckid} ) ;
 	use LWP::UserAgent;
 	use HTTP::Request;
-	$name1=getusername($player1->{playerid});
-	$name2=getusername($player2->{playerid});
+	my ($name1, $avatar1)=getusername($player1->{playerid});
+	
+	my ($name2, $avatar2)=getusername($player2->{playerid});
 	my $userAgent = LWP::UserAgent->new();
 	my $request = HTTP::Request->new( POST => "https://kaelari.tech/kfgame/newgame.cgi" );
 	
-	$request->content("password=ajdkhfaksjfhakdsaflkjhas&player1name=$name1&player2name=$name2&gameid=$gameid&deck1=$deck1&deck2=$deck2&player1=$player1->{playerid}&player2=$player2->{playerid}");
+	$request->content("password=ajdkhfaksjfhakdsaflkjhas&avatar1=$avatar1&avatar2=$avatar2&player1name=$name1&player2name=$name2&gameid=$gameid&deck1=$deck1&deck2=$deck2&player1=$player1->{playerid}&player2=$player2->{playerid}");
 	$request->content_type("application/x-www-form-urlencoded");
 	my $response = $userAgent->request($request);
 	
@@ -93,5 +94,5 @@ sub getusername{
 	my $id=shift;
         return $id unless ($id);
 	my $data=$dbh->selectrow_hashref("SELECT * from `Users` where `userId` = ?", undef, $id);
-	return $data->{username};
+	return $data->{username}, $data->{avatarnum};
 }

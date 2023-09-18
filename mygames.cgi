@@ -12,7 +12,7 @@ $response->{games}=$kfplatformshared::dbh->selectall_arrayref("SELECT * from `Ga
 foreach my $game (@{$response->{games}}){
 	if ($game->{player1} == $kfplatformshared::player->{userId}){
 		$game->{player1} = $kfplatformshared::player->{username};
-		$game->{player2} = kfplatformshared::getusername($game->{player2});
+		($game->{player2}, $game->{avatar}) = kfplatformshared::getusername($game->{player2});
 		$game->{opponent} = $game->{player2};
 		$game->{mydeck}=kfplatformshared::getdeckname($game->{deck1});
 		delete ($game->{deck2});
@@ -20,7 +20,7 @@ foreach my $game (@{$response->{games}}){
 		
 	}else{
 		$game->{player2} = $kfplatformshared::player->{username};
-		$game->{player1} = kfplatformshared::getusername($game->{player1});
+		($game->{player1}, $game->{avatar}) = kfplatformshared::getusername($game->{player1});
 		$game->{mydeck}=kfplatformshared::getdeckname($game->{deck2});
 		$game->{opponent} = $game->{player1};
 		delete ($game->{deck1});

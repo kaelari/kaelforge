@@ -38,20 +38,9 @@ if ($kfgameshared::gamedata->{turn} != $weare ){
     $response->{message} = "Not our turn";
     kfgameshared::end($response);
 }
-my $battlesthisturn=1;
-foreach my $lane (1..5){
-    if ($kfgameshared::gamedata->{lane}{$weare}{$lane}){
-        
-        kfgameshared::debuglog("battles this turn, checking lane which has an object");
-        
-        if ($kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{$weare}{$lane} }{battlesthisturn}> $battlesthisturn){
-        
-            $battlesthisturn=$kfgameshared::gamedata->{objects}{ $kfgameshared::gamedata->{lane}{$weare}{$lane} }{battlesthisturn};
-        }
-    }
-}
 
-if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
+
+if (kfgameshared::checkbattle()){
     #time to B-B-Battle
     kfgameshared::checktriggers("Attack");
     our $lanestring="";
@@ -168,7 +157,7 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
 }else {
     kfgameshared::logmessage("$kfgameshared::player->{username} ended their turn");
     $kfgameshared::gamedata->{players}{$kfgameshared::gamedata->{turn} }{levelprogress} += 1;
-    warn "calling discard!";
+    
     kfgameshared::discard($kfgameshared::gamedata->{turn});
     
     
@@ -273,6 +262,15 @@ if ($kfgameshared::gamedata->{turnphase} < $battlesthisturn){
 				@{$kfgameshared::gamedata->{objects}{$object}{expires}} = grep defined, @{$kfgameshared::gamedata->{objects}{$object}{expires}};
 			}
 			if ((my $decay= kfgameshared::checkkeyword("Poison", $object) )> 0 ){
+                my $armor =kfgameshared::checkarmor($object);
+                if ($decay > $armor){
+                    $decay-= $armor;
+                    $kfgameshared::gamedata->{objects}{$object}{armorthisturn} += $armor;
+                }else {
+                    $kfgameshared::gamedata->{objects}{$object}{armorthisturn} += $decay;
+                    $decay =0;
+                    
+                }
 				$kfgameshared::gamedata->{objects}{$object}{Health}-= $decay;
 				$changed=1;
 			}

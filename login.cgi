@@ -46,10 +46,8 @@ if ( (crypt($password, $playerdata->{password}) eq $playerdata->{password}) and 
     $response->{lastNumber} = $kfplatformshared::dbh->selectrow_arrayref("SELECT `messageId` from `messages` ORDER BY `messageId` DESC limit 1", undef)->[0];
 	$playerdata->{password} = "";
 	$response->{playerid} = $playerdata->{userId};
-    kfplatformshared::grantachievement($hashref->{userId}, 1);
-    if (kfplatformshared::grantachievement($hashref->{userId}, 2)) {	
-		kfplatformshared::addachievement($hashref->{userId}, 3, 1);
-    }
+    $response->{name} = $playerdata->{username};
+    $response->{avatarnum} = $playerdata->{avatarnum};
     kfplatformshared::end($response);
     
 }else {

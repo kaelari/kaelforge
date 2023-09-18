@@ -9,9 +9,8 @@ my $response = {};
 my $game=param("game");
 my $password=param("password");
 my $winner = param("winner");
-warn "game has ended! $game, $password, $winner";
 if ($password ne "ajdkhfaksjfhakdsaflkjhas"){
-	warn ("No access to end game!");
+	
 	$response->{status}="failed";
 	$response->{reason}="no access";
 	kfplatformshared::end($response);
@@ -33,14 +32,14 @@ if (!$winner){
 
 my $gamedata = $kfplatformshared::dbh->selectrow_hashref("SELECT * from `Games` where `gameId` = ?", undef, ($game));
 unless ($gamedata) {
-	warn "no gamedata";
+	
 	$response->{status}="failed";
 	$response->{reason}="no game data";
 	kfplatformshared::end($response);
 	exit;
 }
 if ($gamedata->{ended}){
-	warn "game ended";
+	
 	$response->{status}="failed";
 	$response->{reason}="game ended";
 	kfplatformshared::end($response);
@@ -57,9 +56,9 @@ if ($gamedata->{eventId1}){
 	if ($eventinfo->{gamesplayed} >= $baseeventdata->{gamesneeded}){
 		$kfplatformshared::dbh->do("UPDATE `Playerevents` SET `finished` = 1 WHERE `rowid` = ?", undef, ($eventinfo->{rowid}));
 		kfplatformshared::grantprizes($baseeventdata->{$eventinfo->{wins}."win"}, $gamedata->{player1});
-		grantachievement($gamedata->{player1}, 6);
+		#grantachievement($gamedata->{player1}, 6);
 		if ($eventinfo->{wins}>=4){
-			grantachievement($gamedata->{player1}, 7);
+			#grantachievement($gamedata->{player1}, 7);
 		}
 	}
 
@@ -74,25 +73,25 @@ if ($gamedata->{eventId2}){
 	if ($eventinfo->{gamesplayed} >= $baseeventdata->{gamesneeded}){
 		$kfplatformshared::dbh->do("UPDATE `Playerevents` SET `finished` = 1 WHERE `rowid` = ?", undef, ($eventinfo->{rowid}));
 		kfplatformshared::grantprizes($baseeventdata->{$eventinfo->{wins}."win"}, $gamedata->{player2});
-		grantachievement($gamedata->{player2}, 6);
+		#grantachievement($gamedata->{player2}, 6);
 		if ($eventinfo->{wins}>=4){
-			grantachievement($gamedata->{player2}, 7);
+			#grantachievement($gamedata->{player2}, 7);
 		}
 	}
 
 }
-kfplatformshared::addachievement($gamedata->{player1}, 4, 1);
-kfplatformshared::addachievement($gamedata->{player2}, 4, 1);
+#kfplatformshared::addachievement($gamedata->{player1}, 4, 1);
+#kfplatformshared::addachievement($gamedata->{player2}, 4, 1);
 if ($winner == 1 ){ 
 		kfplatformshared::sendmessage("Won game $game", $gamedata->{player1});
 		kfplatformshared::sendmessage("Lost game $game", $gamedata->{player2});
-		kfplatformshared::addachievement($gamedata->{player1}, 5, 1);
+		#kfplatformshared::addachievement($gamedata->{player1}, 5, 1);
 	}
 
 if ($winner == 2 ){ 
 		kfplatformshared::sendmessage("Won game $game", $gamedata->{player2});
 		kfplatformshared::sendmessage("Lost game $game", $gamedata->{player1});
-		kfplatformshared::addachievement($gamedata->{player2}, 5, 1);
+		#kfplatformshared::addachievement($gamedata->{player2}, 5, 1);
 	}
 
 

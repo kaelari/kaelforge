@@ -31,7 +31,7 @@ if (@errors){
 }
 #We didn't error, make account now
 $kfplatformshared::dbh->do("INSERT INTO `UserLogin`(email) VALUES(?)", undef, $input{email});
-my $id=$kfplatformshared::dbh->{mysql_insertid};
+my $id=$kfplatformshared::dbh->last_insert_id();
 my $key =  join '', ('.', '/', 0..9, 'A'..'Z', 'a'..'z')[rand 64, rand 64];
 my $code = "";
 for ( 1..10){

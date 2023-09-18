@@ -2,7 +2,7 @@
 use strict "vars";
 use lib qw(. /usr/lib/cgi-bin/kfplatform);
 use Digest::MD5 qw(md5_hex);
-use CGI param;
+use CGI qw(param);
 $kfplatformshared::dbh=kfdbplatform::connectdb();
 my $response = {};
 kfplatformshared::init();

@@ -51,6 +51,7 @@ sub init {
 
 sub initquiet {
 	my %cookies = CGI::Cookie->fetch;
+	$dbh = kfdbplatform::connectdb();
 	$dbh->do("USE $gamedb");
 	my $sid = param("session");
 	if (!$sid){
@@ -146,7 +147,7 @@ sub end {
     print "$response";
     
     
-    
+    $dbh->disconnect;
     
     
 }
@@ -167,8 +168,9 @@ sub getusername{
 	my $id=shift;
         return $id unless ($id);
 	my $data=$dbh->selectrow_hashref("SELECT * from `Users` where `userId` = ?", undef, $id);
-	return $data->{username};
+	return $data->{username}, $data->{avatarnum};
 }
+
 sub getuserid{
         my $id=shift;
         return $id unless ($id);
@@ -352,6 +354,7 @@ sub grantitem {
 
 # Add progress to a player's achievement
 sub addachievement {
+    return;
 	my $who=shift;
 	my $achievement = shift;
 	my $progress = shift;
@@ -379,6 +382,7 @@ sub addachievement {
 	}
 }
 sub grantachievement {
+    return;
 	my $who=shift;
 	my $achievement=shift;
         

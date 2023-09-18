@@ -59,7 +59,7 @@ sub end {
     my $response = to_json($result);
     print "Content-Type: Text/JSON\n\n";
     print "$response";
-    
+    $dbh->disconnect;
     exit;
     
 }
